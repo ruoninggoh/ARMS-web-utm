@@ -1,23 +1,12 @@
-import axios from 'axios';
+import apiClient from './api';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:7224/api';
-
+// Function to log in the user
 export const loginUser = async (utmId: string, password: string) => {
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/Account/login`,
-      {
-        utmId,
-        password,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
+    const response = await apiClient.post('/Account/login', {
+      utmId,
+      password,
+    });
     return response.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Login failed');
