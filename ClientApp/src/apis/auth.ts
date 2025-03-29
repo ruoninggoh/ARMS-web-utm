@@ -33,18 +33,26 @@
 // };
 import axios from 'axios';
 
-const BFF_URL = 'https://localhost:7252'; // BFF URL
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:7224/api';
 
 export const loginUser = async (utmId: string, password: string) => {
   try {
-    const response = await axios.post(`${BFF_URL}/api/auth/login`, {
-      utmId,
-      password,
-    });
+    const response = await axios.post(
+      `${API_BASE_URL}/Account/login`,
+      {
+        utmId,
+        password,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
 
     return response.data;
   } catch (error: any) {
-    console.error('Login error:', error.response?.data);
     throw new Error(error.response?.data?.message || 'Login failed');
   }
 };
