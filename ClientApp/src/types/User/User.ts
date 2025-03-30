@@ -1,8 +1,8 @@
 export interface User {
-  UTMID: string;
-  name: string;
+  utmid: string;
+  userName: string;
   email: string;
-  password: string;
+  password?: string;
   role:
     | 'Lecturer'
     | 'Admin'
@@ -10,5 +10,5 @@ export interface User {
     | 'Program Coordinator'
     | 'Deputy Dean'
     | 'Dean';
-  phoneNo: string;
+  phoneNumber: string;
 }

@@ -1,3 +1,4 @@
+import { logoutUser } from '@/apis/auth';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import FcLogo from '@/images/landing/fcLogo2.png';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -24,6 +25,11 @@ const Header: React.FC = () => {
     redirect('academic');
   };
 
+  const handleUser = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    redirect('admin/userManagement');
+  };
+
   const handleProfileRedirect = (
     event: React.MouseEvent<HTMLAnchorElement>,
   ) => {
@@ -33,6 +39,7 @@ const Header: React.FC = () => {
 
   const handleLogOut = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
+    logoutUser();
     redirect('login');
   };
 
@@ -99,11 +106,11 @@ const Header: React.FC = () => {
             <li className="nav-item mx-4">
               <a
                 className="nav-link"
-                href="#"
+                onClick={handleUser}
                 role="button"
                 style={{ cursor: 'pointer' }}
               >
-                Management
+                User Management
               </a>
             </li>
           </ul>

@@ -2,6 +2,7 @@ import Footer from '@/components/Layout/Footer/footer';
 import Header from '@/components/Layout/Header/header';
 import CloudCheckIcon from '@/images/dashboard/cloud-check.svg';
 // import DashboardPic from '@/images/dashboard/dashboardPic.jpg';
+import { getUser } from '@/apis/auth';
 import DashboardPic from '@/images/dashboard/UTM-image.jpg';
 import AccessFile2 from '@/images/dashboard/accessFile2.jpg';
 
@@ -9,12 +10,16 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Dashboard: React.FC = () => {
+  const user = getUser();
+  console.log('Retrieved user:', user); // Check if user data is correctly retrieved
+  console.log(localStorage.getItem('user'));
+
   return (
     <Container>
       <Header />
       <MainContent>
         <div className="mb-4">
-          <h4>Hi, Dr Sim Hiew Moi</h4>
+          <h4>Hi, {user?.userName || 'User'}</h4>
         </div>
         <Banner>
           <BannerText>

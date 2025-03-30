@@ -1,9 +1,11 @@
+import { registerUser } from '@/apis/userTable';
 import {
   alphaNumericOnly,
   alphabetOnly,
   emailCharacter,
   numericOnly,
 } from '@/helpers/InputKeyPressValidator';
+import React, { useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { IoPersonAddSharp } from 'react-icons/io5';
 
@@ -12,7 +14,51 @@ interface Props {
 }
 
 export default function AddUser({ onClose }: Props) {
-  // const [user, setUser] = useState({ name: '', email: '', role: 'Lecturer' });
+  const [user, setUser] = useState({
+    utmId: '',
+    username: '',
+    email: '',
+    password: '',
+    role: 'Lecturer' as
+      | 'Lecturer'
+      | 'Admin'
+      | 'Hod'
+      | 'Program Coordinator'
+      | 'Deputy Dean'
+      | 'Dean',
+    phone: '',
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setUser((prevUser) => ({ ...prevUser, [name]: value }));
+  };
+  const handleSubmit = async () => {
+    if (
+      !user.utmId.trim() ||
+      !user.username.trim() ||
+      !user.email.trim() ||
+      !user.password.trim() ||
+      !user.role.trim() ||
+      !user.phone.trim()
+    ) {
+      alert('All fields are required. Please fill in all the details.');
+      return;
+    }
+
+    try {
+      await registerUser(user);
+      alert('User registered successfully!');
+      onClose();
+    } catch (error) {
+      console.error('Error registering user:', error);
+      alert('Failed to register user.');
+    }
+  };
 
   return (
     <Modal show onHide={onClose} centered size="lg">
@@ -28,62 +74,82 @@ export default function AddUser({ onClose }: Props) {
             <Form.Label>UTM ID</Form.Label>
             <Form.Control
               type="text"
+              name="utmId"
               placeholder="Enter UTM ID"
               onKeyDown={alphaNumericOnly}
+              onChange={handleChange}
+              value={user.utmId}
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Name</Form.Label>
+            <Form.Label>Username</Form.Label>
             <Form.Control
               type="text"
+              name="username"
               placeholder="Enter full name"
               onKeyDown={alphabetOnly}
+              onChange={handleChange}
+              value={user.username}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Email</Form.Label>
             <Form.Control
               type="email"
+              name="email"
               placeholder="Enter email"
               onKeyDown={emailCharacter}
               maxLength={50}
+              onChange={handleChange}
+              value={user.email}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Password</Form.Label>
-            <Form.Control type="password" placeholder="Enter password" />
+            <Form.Control
+              type="password"
+              name="password"
+              placeholder="Enter password"
+              onChange={handleChange}
+              value={user.password}
+            />
             <Form.Text className="text-muted text-end d-block">
-              <i> Hint: The password should be at least six characters long</i>
+              <i>
+                Password must be at least 6 characters with a mix of uppercase,
+                lowercase, number and special character.
+              </i>
             </Form.Text>
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Role</Form.Label>
-            <Form.Select>
-              <option>Admin</option>
-              <option>Lecturer</option>
-              <option>Program Coordinator</option>
-              <option>Head of Department (Hod)</option>
-              <option>Deputy Dean</option>
-              <option>Dean</option>
+            <Form.Select name="role" onChange={handleChange} value={user.role}>
+              <option value="Admin">Admin</option>
+              <option value="Lecturer">Lecturer</option>
+              <option value="Program Coordinator">Program Coordinator</option>
+              <option value="Hod">Head of Department (Hod)</option>
+              <option value="Deputy Dean">Deputy Dean</option>
+              <option value="Dean">Dean</option>
             </Form.Select>
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Phone No</Form.Label>
             <Form.Control
               type="tel"
+              name="phone"
               placeholder="Enter phone number"
               maxLength={10}
               inputMode="numeric"
               onKeyDown={numericOnly}
+              onChange={handleChange}
+              value={user.phone}
             />
           </Form.Group>
         </Form>
       </Modal.Body>
       <Modal.Footer className="justify-content-center">
-        {/* <Button variant="secondary" onClick={onClose}>
-          Cancel
-        </Button> */}
-        <Button variant="success">Add User</Button>
+        <Button variant="success" onClick={handleSubmit}>
+          Add User
+        </Button>
       </Modal.Footer>
     </Modal>
   );

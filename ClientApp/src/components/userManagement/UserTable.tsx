@@ -1,43 +1,9 @@
+import { deleteUser, getAllUsers } from '@/apis/userTable';
 import { User } from '@/types/User/User';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Button, Table } from 'react-bootstrap';
 import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import EditUser from './EditUser';
-
-const usersData: User[] = [
-  {
-    UTMID: 'A0001',
-    name: 'Husna',
-    email: 'husna@utm.my',
-    password: 'husna',
-    role: 'Lecturer',
-    phoneNo: '0128881234',
-  },
-  {
-    UTMID: 'A0002',
-    name: 'Ali',
-    email: 'ali123@utm.my',
-    password: 'husna',
-    role: 'Lecturer',
-    phoneNo: '0128881234',
-  },
-  {
-    UTMID: 'A0003',
-    name: 'RuoNing',
-    email: 'ruoning@utm.my',
-    password: 'husna',
-    role: 'Hod',
-    phoneNo: '0128881234',
-  },
-  {
-    UTMID: 'A0004',
-    name: 'Sim',
-    email: 'hiewmoi@utm.my',
-    password: 'husna',
-    role: 'Dean',
-    phoneNo: '0128881234',
-  },
-];
 
 interface Props {
   searchTerm: string;
@@ -45,35 +11,63 @@ interface Props {
 }
 
 export default function UserTable({ searchTerm, selectedRole }: Props) {
-  const [users, setUsers] = useState<User[]>(usersData);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Fetch users from API when the component mounts
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const fetchedUsers = await getAllUsers();
+        setUsers(fetchedUsers || []); // Ensure it is always an array
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleDeleteClick = (id: string) => {
     setSelectedUser(id);
     setShowModal(true);
   };
 
-  const handleConfirmDelete = () => {
-    setUsers(users.filter((user) => user.UTMID !== selectedUser));
+  const handleConfirmDelete = async () => {
+    if (selectedUser) {
+      try {
+        await deleteUser(selectedUser);
+        setUsers(users.filter((user) => user.utmid !== selectedUser));
+        setSuccessMessage('User deleted successfully. ');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      }
+    }
     setShowModal(false);
   };
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (selectedRole === '' ||
-        user.role.toLowerCase() === selectedRole.toLowerCase()),
-  );
+
+  const filteredUsers = Array.isArray(users)
+    ? users.filter(
+        (user) =>
+          user.userName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          (selectedRole === '' ||
+            user.role.toLowerCase() === selectedRole.toLowerCase()),
+      )
+    : [];
 
   return (
     <>
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
       {filteredUsers.length === 0 ? (
         <Alert variant="warning">No users found.</Alert>
       ) : (
         <Table striped bordered hover>
           <thead className="bg-dark text-white">
             <tr>
-              <th>User ID</th>
+              <th>UTMID</th>
               <th>Username</th>
               <th>Email</th>
               <th>Role</th>
@@ -82,18 +76,18 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.UTMID}>
-                <td>{user.UTMID}</td>
-                <td>{user.name}</td>
+              <tr key={user.utmid}>
+                <td>{user.utmid}</td>
+                <td>{user.userName}</td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>
                 <td>
-                  <EditUser user={user} />
+                  <EditUser utmid={user.utmid} />
                   <Button
                     variant="danger"
                     size="sm"
                     className="ms-2 action-button"
-                    onClick={() => handleDeleteClick(user.UTMID)}
+                    onClick={() => handleDeleteClick(user.utmid)}
                   >
                     Delete
                   </Button>

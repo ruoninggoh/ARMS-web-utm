@@ -21,7 +21,7 @@ export const numericOnly = (event: any) => {
 };
 
 export const alphabetOnly = (event: any) => {
-  const validator = /[1234567890`@~<>;:"[-\]|{}(/.,')=_+&#$%^*!?]/g;
+  const validator = /[^a-zA-Z\s]/g; // Allows only letters (uppercase & lowercase) and spaces
   if (validator.test(event.key)) {
     event.preventDefault();
   }

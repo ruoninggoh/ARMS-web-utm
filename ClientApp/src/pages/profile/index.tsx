@@ -1,37 +1,51 @@
+import { fetchUserProfile, updateUserProfile } from '@/apis/profile';
 import Footer from '@/components/Layout/Footer/footer';
 import Header from '@/components/Layout/Header/header';
 import EditableField from '@/components/Profile/EditableField';
-import ProfilePicture from '@/components/Profile/ProfilePicture';
-import profilePhoto from '@/images/profile/profile.jpg';
-import React, { useState } from 'react';
-import { styled } from 'styled-components';
+import React, { useCallback, useEffect, useState } from 'react';
+import styled from 'styled-components';
 
 const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    photo: profilePhoto,
-    utmId: '123456',
-    firstname: 'John',
-    lastname: 'Doe',
-    email: 'john.doe@utm.my',
-    role: 'Admin',
-    phone: '+60123456789',
-  });
+  const [formData, setFormData] = useState<Record<string, string>>({});
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
-    if (file) {
-      setFormData({ ...formData, photo: URL.createObjectURL(file) });
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profileData = await fetchUserProfile();
+        console.log('API Response:', profileData); // Debugging
+
+        if (profileData && typeof profileData === 'object') {
+          setFormData({
+            utmId: profileData.utmid || '',
+            username: profileData.userName || '',
+            email: profileData.email || '',
+            role: profileData.role || '',
+            phoneNumber: profileData.phoneNumber || '',
+          });
+        } else {
+          console.error('Invalid API response structure:', profileData);
+        }
+      } catch (error) {
+        console.error('Failed to load profile', error);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value || '' }));
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await updateUserProfile(formData);
+      setIsEditing(false);
+      alert('Profile updated successfully');
+    } catch (error) {
+      console.error('Failed to update profile', error);
+      alert('Failed to update profile');
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = () => {
-    console.log('Saving data:', formData);
-    setIsEditing(false);
   };
 
   return (
@@ -40,55 +54,18 @@ const ProfilePage: React.FC = () => {
       <ContentContainer>
         <FormContainer>
           <Title>Profile</Title>
-          <ProfileWrapper>
-            <ProfilePicture
-              src={formData.photo}
-              onImageChange={handleImageChange}
-              isEditable={isEditing}
-            />
-          </ProfileWrapper>
-          <EditableField
-            label="Role"
-            name="role"
-            value={formData.role}
-            isEditable={false}
-            onChange={handleChange}
-          />
-          <EditableField
-            label="UTM ID"
-            name="utmId"
-            value={formData.utmId}
-            isEditable={false}
-            onChange={handleChange}
-          />
-          <EditableField
-            label="First Name"
-            name="firstname"
-            value={formData.firstname}
-            isEditable={isEditing}
-            onChange={handleChange}
-          />
-          <EditableField
-            label="Last Name"
-            name="lastname"
-            value={formData.lastname}
-            isEditable={isEditing}
-            onChange={handleChange}
-          />
-          <EditableField
-            label="Email"
-            name="email"
-            value={formData.email}
-            isEditable={isEditing}
-            onChange={handleChange}
-          />
-          <EditableField
-            label="Phone"
-            name="phone"
-            value={formData.phone}
-            isEditable={isEditing}
-            onChange={handleChange}
-          />
+          {['role', 'utmId', 'username', 'email', 'phoneNumber'].map(
+            (field) => (
+              <EditableField
+                key={field}
+                label={field.charAt(0).toUpperCase() + field.slice(1)}
+                name={field}
+                value={formData[field] || ''}
+                isEditable={isEditing && !['role', 'utmId'].includes(field)}
+                onChange={handleChange}
+              />
+            ),
+          )}
           <ButtonWrapper>
             <SaveButton
               onClick={isEditing ? handleSave : () => setIsEditing(true)}
@@ -124,13 +101,9 @@ const Title = styled.h2`
   margin-bottom: 20px;
 `;
 
-const ProfileWrapper = styled.div`
-  margin-bottom: 30px;
-`;
-
 const FormContainer = styled.div`
-  max-width: 1000px; /* Set a max width for the form */
-  margin: 0 auto; /* Center the form */
+  max-width: 1000px;
+  margin: 0 auto;
 `;
 
 const ButtonWrapper = styled.div`
@@ -148,14 +121,12 @@ const SaveButton = styled.button`
   margin-top: 20px;
   padding: 10px 40px;
   border-radius: 1rem;
-  text-decoration: none;
-
   &:hover {
     background-color: #4a0018;
     transform: scale(1.05);
   }
-
   &:focus {
     box-shadow: none;
   }
+  //
 `;
