@@ -26,7 +26,7 @@ export default function AddUser({ onClose }: Props) {
       | 'Program Coordinator'
       | 'Deputy Dean'
       | 'Dean',
-    phone: '',
+    phoneNumber: '',
   });
 
   const handleChange = (
@@ -44,7 +44,7 @@ export default function AddUser({ onClose }: Props) {
       !user.email.trim() ||
       !user.password.trim() ||
       !user.role.trim() ||
-      !user.phone.trim()
+      !user.phoneNumber.trim()
     ) {
       alert('All fields are required. Please fill in all the details.');
       return;
@@ -135,13 +135,13 @@ export default function AddUser({ onClose }: Props) {
             <Form.Label>Phone No</Form.Label>
             <Form.Control
               type="tel"
-              name="phone"
+              name="phoneNumber"
               placeholder="Enter phone number"
               maxLength={10}
               inputMode="numeric"
               onKeyDown={numericOnly}
               onChange={handleChange}
-              value={user.phone}
+              value={user.phoneNumber}
             />
           </Form.Group>
         </Form>
