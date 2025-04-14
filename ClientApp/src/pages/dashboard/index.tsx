@@ -6,13 +6,24 @@ import { getUser } from '@/apis/auth';
 import DashboardPic from '@/images/dashboard/UTM-image.jpg';
 import AccessFile2 from '@/images/dashboard/accessFile2.jpg';
 
-import React from 'react';
+import { usePageRedirection } from '@/hooks/usePageRedirection';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 
 const Dashboard: React.FC = () => {
   const user = getUser();
+  const redirect = usePageRedirection();
+
   console.log('Retrieved user:', user); // Check if user data is correctly retrieved
   console.log(localStorage.getItem('user'));
+  useEffect(() => {
+    if (!user) {
+      console.log('no user');
+
+      redirect('login');
+    }
+  }, [redirect, user]);
+  if (!user) return null; // Prevent UI flicker before redirect
 
   return (
     <Container>

@@ -2,36 +2,37 @@ import { fetchUserProfile, updateUserProfile } from '@/apis/profile';
 import Footer from '@/components/Layout/Footer/footer';
 import Header from '@/components/Layout/Header/header';
 import EditableField from '@/components/Profile/EditableField';
+import { usePageRedirection } from '@/hooks/usePageRedirection';
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const redirect = useCallback(usePageRedirection(), []); // ✅ Prevent re-renders
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const profileData = await fetchUserProfile();
-        console.log('API Response:', profileData); // Debugging
+        console.log('API Response:', profileData);
 
-        if (profileData && typeof profileData === 'object') {
-          setFormData({
-            utmId: profileData.utmid || '',
-            username: profileData.userName || '',
-            email: profileData.email || '',
-            role: profileData.role || '',
-            phoneNumber: profileData.phoneNumber || '',
-          });
-        } else {
-          console.error('Invalid API response structure:', profileData);
-        }
+        setFormData({
+          utmId: profileData.utmid || '',
+          username: profileData.userName || '',
+          email: profileData.email || '',
+          role: profileData.role || '',
+          phoneNumber: profileData.phoneNumber || '',
+        });
       } catch (error) {
-        console.error('Failed to load profile', error);
+        console.error('Failed', error);
+        redirect('login');
       }
     };
+
     loadProfile();
-  }, []);
+  }, [redirect]); // ✅ Won't trigger infinite re-renders
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value || '' }));

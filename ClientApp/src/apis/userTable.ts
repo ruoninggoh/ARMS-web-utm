@@ -8,6 +8,7 @@ export const getAllUsers = async (): Promise<User[]> => {
     return response.data.data;
   } catch (error) {
     console.error('Error fetching users:', error);
+
     throw error;
   }
 };

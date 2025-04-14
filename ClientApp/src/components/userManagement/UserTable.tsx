@@ -1,4 +1,5 @@
 import { deleteUser, getAllUsers } from '@/apis/userTable';
+import { usePageRedirection } from '@/hooks/usePageRedirection';
 import { User } from '@/types/User/User';
 import { useEffect, useState } from 'react';
 import { Alert, Button, Table } from 'react-bootstrap';
@@ -15,8 +16,8 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const redirect = usePageRedirection();
 
-  // Fetch users from API when the component mounts
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -24,6 +25,7 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
         setUsers(fetchedUsers || []); // Ensure it is always an array
       } catch (error) {
         console.error('Failed to fetch users:', error);
+        redirect('login');
       }
     };
 
@@ -101,6 +103,7 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
         show={showModal}
         onClose={() => setShowModal(false)}
         onConfirm={handleConfirmDelete}
+        message="Are you sure you want to delete this user?"
       />
     </>
   );

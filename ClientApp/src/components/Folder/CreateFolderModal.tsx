@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { FaCalendarAlt } from 'react-icons/fa';
 import { RxCross2 } from 'react-icons/rx';
@@ -8,13 +8,20 @@ import styled from 'styled-components';
 interface CreateFolderModalProps {
   show: boolean;
   onClose: () => void;
-  onCreate: (folderName: string, assignee: string, dueDate: string) => void;
+  onCreate: (
+    folderName: string,
+    assignee?: string | null,
+    dueDate?: string | null,
+  ) => void;
+  currentFolderName?: string;
+  currentFolderId?: number | null; // Add this prop
 }
 
 const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   show,
   onClose,
   onCreate,
+  currentFolderName,
 }) => {
   const {
     register,
@@ -23,9 +30,23 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
     reset,
   } = useForm();
 
-  const onSubmit = (data: any) => {
-    onCreate(data.folderName, data.assignee, data.dueDate);
-    reset();
+  const [creatingFolder, setCreatingFolder] = useState(false); // Added loading state
+
+  const onSubmit = async (data: any) => {
+    const formattedDate = data.dueDate
+      ? new Date(data.dueDate).toISOString()
+      : null;
+    setCreatingFolder(true); // Start loading
+    try {
+      await onCreate(
+        data.folderName,
+        data.assignee || null, // Pass null if empty
+        formattedDate,
+      );
+      reset();
+    } finally {
+      setCreatingFolder(false); // End loading
+    }
   };
 
   const handleClearError = (field: string) => {
@@ -38,6 +59,13 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
         <Modal.Title>Create Folder</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {currentFolderName && (
+          <div className="mb-3 text-muted">
+            <small>
+              Location: <strong>{currentFolderName}</strong>
+            </small>
+          </div>
+        )}
         <Form className="p-3" onSubmit={handleSubmit(onSubmit)}>
           <Form.Group className="mb-3">
             <Form.Label>
@@ -64,7 +92,10 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
             </Form.Label>
             <Form.Control
               type="text"
-              {...register('assignee', { required: 'Assignee is required' })}
+              {...register(
+                'assignee',
+                // , { required: 'Assignee is required' }
+              )}
               placeholder="Lecturer Name"
             />
             {errors.assignee && (
@@ -85,8 +116,12 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
             </Form.Text>
             <div className="d-flex align-items-center">
               <Form.Control
-                type="date"
-                {...register('dueDate', { required: 'Due date is required' })}
+                // type="date"
+                type="datetime-local"
+                {...register(
+                  'dueDate',
+                  // , { required: 'Due date is required' }
+                )}
               />
 
               <Button variant="outline-secondary" disabled className="ms-2">
@@ -102,11 +137,22 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
           </Form.Group>
 
           <Modal.Footer className="justify-content-center">
-            <Button variant="secondary" onClick={onClose}>
+            <Button
+              variant="secondary"
+              onClick={onClose}
+              disabled={creatingFolder}
+            >
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
-              Create
+            <Button variant="primary" type="submit" disabled={creatingFolder}>
+              {creatingFolder ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create'
+              )}
             </Button>
           </Modal.Footer>
         </Form>

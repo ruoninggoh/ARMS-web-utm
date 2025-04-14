@@ -33,11 +33,13 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "2.6.1",
+    "@types/jwt-decode": "3.1.0",
     "bootstrap": "5.3.3",
     "bootstrap-icons": "1.11.3",
     "gatsby": "5.14.1",
     "gatsby-plugin-pnpm": "1.2.10",
     "gatsby-plugin-react-helmet": "6.14.0",
+    "jwt-decode": "4.0.0",
     "listr2": "8.2.5",
     "react": "18.2.0",
     "react-bootstrap": "2.10.5",
