@@ -1,31 +1,37 @@
-import { createFolder, deleteFolder, getNestedFolders } from '@/apis/folder';
+import {
+  createFolder,
+  deleteFolder,
+  editFolder,
+  getNestedFolders,
+} from '@/apis/folder';
 import { Folder } from '@/types/Folder/folder';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Breadcrumb,
-  Button,
   Col,
   Container,
+  Dropdown,
   Row,
-  Spinner,
   Table,
 } from 'react-bootstrap';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import {
+  FaFileUpload,
   FaFolder,
   FaFolderOpen,
+  FaFolderPlus,
   FaHome,
   FaPlus,
   FaRegEdit,
-  FaShareSquare,
 } from 'react-icons/fa';
 import { FaRegCommentDots } from 'react-icons/fa6';
 import styled from 'styled-components';
 import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import CreateFolderModal from './CreateFolderModal';
+import EditFolderModal from './EditFolderModal';
 
 const FolderList: React.FC = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -40,6 +46,42 @@ const FolderList: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+
+  // Add this handler
+  const handleEditFolder = async (
+    folderName: string,
+    assignee?: string | null,
+    dueDate?: string | null,
+  ) => {
+    if (!editingFolder) return;
+
+    try {
+      const updatedFolder = await editFolder({
+        id: editingFolder.id,
+        folderName,
+        lecturerUsername: assignee || undefined,
+        dueDate: dueDate || undefined,
+        parentFolderIds: editingFolder.parentFolderIds, // Add if needed
+      });
+
+      // Update the folder in state
+      setFolders(
+        folders.map((f) =>
+          f.id === editingFolder.id ? { ...f, ...updatedFolder } : f,
+        ),
+      );
+
+      setEditingFolder(null);
+    } catch (error) {
+      console.error('Error updating folder:', error);
+    }
+  };
+
+  // Update the edit click handler
+  const handleEditClick = (folder: Folder) => {
+    setEditingFolder(folder);
+  };
 
   const handleDeleteClick = (folderId: number) => {
     setSelectedFolderId(folderId);
@@ -162,22 +204,30 @@ const FolderList: React.FC = () => {
         </Row>
         <Row>
           <Col className="text-end">
-            <Button
-              className="mb-3 align-items-center btn btn-success"
-              onClick={() => setShowModal(true)}
-              disabled={isLoading || creatingFolder}
-            >
-              {creatingFolder ? (
-                <>
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <FaPlus className="me-2" /> Create Folder
-                </>
-              )}
-            </Button>
+            <Dropdown className="text-end mb-3">
+              <Dropdown.Toggle
+                variant="success"
+                id="dropdown-create"
+                disabled={isLoading || creatingFolder}
+              >
+                <FaPlus className="me-2" />
+                {creatingFolder ? 'Creating...' : 'Create'}
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu>
+                <Dropdown.Header>Folder Actions</Dropdown.Header>
+
+                <Dropdown.Item onClick={() => setShowModal(true)}>
+                  <FaFolderPlus className="me-2" />
+                  Create Folder
+                </Dropdown.Item>
+
+                <Dropdown.Item onClick={() => setShowModal(true)}>
+                  <FaFileUpload className="me-2" />
+                  Upload File
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
           </Col>
         </Row>
 
@@ -273,7 +323,10 @@ const FolderList: React.FC = () => {
                         style={{ right: 0 }}
                         ref={dropdownRef} // <-- attach ref here
                       >
-                        <div className="custom-dropdown-item">
+                        <div
+                          className="custom-dropdown-item"
+                          onClick={() => handleEditClick(folder)}
+                        >
                           <FaRegEdit /> Edit
                         </div>
                         <div className="custom-dropdown-item">
@@ -285,9 +338,9 @@ const FolderList: React.FC = () => {
                         >
                           <AiOutlineDelete /> Delete
                         </div>
-                        <div className="custom-dropdown-item">
+                        {/* <div className="custom-dropdown-item">
                           <FaShareSquare /> Share
-                        </div>
+                        </div> */}
                       </div>
                     )}
                   </td>
@@ -315,6 +368,18 @@ const FolderList: React.FC = () => {
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleConfirmDelete}
         message="Are you sure you want to delete this folder?"
+      />
+
+      <EditFolderModal
+        show={!!editingFolder}
+        onClose={() => setEditingFolder(null)}
+        onEdit={handleEditFolder}
+        currentFolder={editingFolder}
+        parentFolderName={
+          breadcrumbs.length > 0
+            ? breadcrumbs[breadcrumbs.length - 1].name
+            : undefined
+        }
       />
     </Container>
   );
@@ -375,19 +440,21 @@ const StyledTable = styled(Table)`
     border: 1px solid #dee2e6;
     border-radius: 8px;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-    min-width: 180px;
+    width: 160px;
+    padding: 0.25rem 0;
     z-index: 1000;
-    padding: 8px 0;
   }
 
   .custom-dropdown-item {
     display: flex;
     align-items: center;
-    padding: 10px 18px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
     font-size: 16px;
     color: #212529;
     transition: background-color 0.2s ease-in-out;
     white-space: nowrap;
+    gap: 8px;
   }
 
   .custom-dropdown-item:hover {

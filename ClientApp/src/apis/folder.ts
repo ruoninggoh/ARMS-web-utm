@@ -8,6 +8,7 @@ export const getNestedFolders = async (
   const response = await apiClient.get('/Folders/nested', { params });
   return response.data.map((folder: any) => ({
     ...folder,
+    lecturerUsername: folder.lecturerUsername, // Ensure this is included
     lastModified: folder.lastModified || new Date().toISOString(), // Fallback if not provided
   }));
 };
@@ -35,8 +36,14 @@ export const editFolder = async (data: {
   folderName: string;
   lecturerUsername?: string;
   dueDate?: string | null;
+  parentFolderIds?: number[];
 }): Promise<Folder> => {
-  const response = await apiClient.put(`/Folders/${data.id}`, data);
+  const response = await apiClient.put(`/Folders/${data.id}`, {
+    folderName: data.folderName,
+    lecturerUsername: data.lecturerUsername,
+    dueDate: data.dueDate,
+    parentFolderIds: data.parentFolderIds || [],
+  });
   return response.data;
 };
 
