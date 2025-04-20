@@ -27,7 +27,34 @@ namespace ARMS_web_utm.Controllers
             }
         }
 
-        // Dynamic GET method
+        /*  // Dynamic GET method
+          [HttpGet("{*path}")]
+          public async Task<IActionResult> DynamicGet(string path, [FromQuery] Dictionary<string, string> queryParams)
+          {
+              var queryString = string.Join("&", queryParams.Select(q => $"{q.Key}={q.Value}"));
+              var targetUrl = $"{_baseUrl}/{path}?{queryString}";
+
+              try
+              {
+                  var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
+                  ForwardAuthorizationHeader(request);
+
+                  var response = await _httpClient.SendAsync(request);
+
+                  if (response.IsSuccessStatusCode)
+                  {
+                      var result = await response.Content.ReadAsStringAsync();
+                      return Content(result, response.Content.Headers.ContentType?.ToString() ?? "application/json");
+                  }
+
+                  return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
+              }
+              catch (Exception ex)
+              {
+                  return StatusCode(500, $"Error forwarding GET request: {ex.Message}");
+              }
+          }*/
+
         [HttpGet("{*path}")]
         public async Task<IActionResult> DynamicGet(string path, [FromQuery] Dictionary<string, string> queryParams)
         {
@@ -43,8 +70,20 @@ namespace ARMS_web_utm.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
+                    var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
+
+                    // If the content is a file, return as a stream
+                    if (contentType.Contains("application/octet-stream") || contentType.Contains("image") || contentType.Contains("pdf"))
+                    {
+                        return new FileStreamResult(await response.Content.ReadAsStreamAsync(), contentType)
+                        {
+                            FileDownloadName = "downloadedFile"  // You can set a dynamic file name if needed
+                        };
+                    }
+
+                    // Otherwise, return content as JSON or text
                     var result = await response.Content.ReadAsStringAsync();
-                    return Content(result, response.Content.Headers.ContentType?.ToString() ?? "application/json");
+                    return Content(result, contentType);
                 }
 
                 return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
@@ -55,35 +94,110 @@ namespace ARMS_web_utm.Controllers
             }
         }
 
+
         // Dynamic POST method
+        /*        [HttpPost("{*path}")]
+                public async Task<IActionResult> DynamicPost(string path, [FromBody] JsonElement requestBody)
+                {
+                    var targetUrl = $"{_baseUrl}/{path}";
+
+                    try
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+                        {
+                            Content = new StringContent(requestBody.GetRawText(), Encoding.UTF8, "application/json")
+                        };
+                        ForwardAuthorizationHeader(request);
+
+                        var response = await _httpClient.SendAsync(request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var result = await response.Content.ReadAsStringAsync();
+                            return Content(result, response.Content.Headers.ContentType?.ToString() ?? "application/json");
+                        }
+
+                        return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, $"Error forwarding POST request: {ex.Message}");
+                    }
+                }*/
+
+
         [HttpPost("{*path}")]
-        public async Task<IActionResult> DynamicPost(string path, [FromBody] JsonElement requestBody)
+        public async Task<IActionResult> DynamicPost(string path)
         {
             var targetUrl = $"{_baseUrl}/{path}";
 
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+                // Check if this is a file upload request
+                if (Request.HasFormContentType)
                 {
-                    Content = new StringContent(requestBody.GetRawText(), Encoding.UTF8, "application/json")
-                };
-                ForwardAuthorizationHeader(request);
+                    // Handle as multipart form data
+                    var formContent = new MultipartFormDataContent();
 
-                var response = await _httpClient.SendAsync(request);
+                    // Copy all form fields
+                    foreach (var field in Request.Form)
+                    {
+                        if (Request.Form.Files.All(f => f.Name != field.Key))
+                        {
+                            formContent.Add(new StringContent(field.Value), field.Key);
+                        }
+                    }
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadAsStringAsync();
-                    return Content(result, response.Content.Headers.ContentType?.ToString() ?? "application/json");
+                    // Copy all files
+                    foreach (var file in Request.Form.Files)
+                    {
+                        var fileContent = new StreamContent(file.OpenReadStream());
+                        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(file.ContentType);
+                        formContent.Add(fileContent, file.Name, file.FileName);
+                    }
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+                    {
+                        Content = formContent
+                    };
+                    ForwardAuthorizationHeader(request);
+
+                    var response = await _httpClient.SendAsync(request);
+                    return await HandleResponse(response);
                 }
+                else
+                {
+                    // Handle as JSON (original behavior)
+                    using var reader = new StreamReader(Request.Body);
+                    var requestBody = await reader.ReadToEndAsync();
 
-                return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
+                    var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+                    {
+                        Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
+                    };
+                    ForwardAuthorizationHeader(request);
+
+                    var response = await _httpClient.SendAsync(request);
+                    return await HandleResponse(response);
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error forwarding POST request: {ex.Message}");
+                return StatusCode(500, $"Error forwarding request: {ex.Message}");
             }
         }
+
+        private async Task<IActionResult> HandleResponse(HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                return Content(result, response.Content.Headers.ContentType?.ToString());
+            }
+            return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
+        }
+
+
 
         // Dynamic PUT method
         [HttpPut("{*path}")]
