@@ -1,9 +1,16 @@
 import {
+  deleteFile,
+  downloadFile,
+  getFilesByFolder,
+  updateFile,
+} from '@/apis/file';
+import {
   createFolder,
   deleteFolder,
   editFolder,
   getNestedFolders,
 } from '@/apis/folder';
+import { File } from '@/types/File/file';
 import { Folder } from '@/types/Folder/folder';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -18,7 +25,13 @@ import {
 import { AiOutlineDelete } from 'react-icons/ai';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import {
+  FaDownload,
+  FaFileAlt,
+  FaFileExcel,
+  FaFileImage,
+  FaFilePdf,
   FaFileUpload,
+  FaFileWord,
   FaFolder,
   FaFolderOpen,
   FaFolderPlus,
@@ -27,9 +40,12 @@ import {
   FaRegEdit,
 } from 'react-icons/fa';
 import { FaRegCommentDots } from 'react-icons/fa6';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import styled from 'styled-components';
 import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import UploadFileModal from '../File/UploadFileModal';
 import CreateFolderModal from './CreateFolderModal';
 import EditFolderModal from './EditFolderModal';
 
@@ -45,10 +61,115 @@ const FolderList: React.FC = () => {
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
-  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
 
-  // Add this handler
+  const [deleteTarget, setDeleteTarget] = useState<'file' | 'folder' | null>(
+    null,
+  );
+  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+
+  // File upload
+  const handleUploadSuccess = async () => {
+    try {
+      if (currentFolderId !== null) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const files = await getFilesByFolder(currentFolderId);
+        setFiles(files);
+        toast.success('File uploaded successfully.');
+      }
+    } catch (error) {
+      console.error('Error refreshing files:', error);
+      toast.error('Failed to upload file. Please try again.');
+    }
+  };
+
+  // Add this useEffect to fetch files when folder changes
+  useEffect(() => {
+    const fetchFiles = async () => {
+      if (currentFolderId !== null) {
+        try {
+          console.log('Fetching files for folder:', currentFolderId); // Add this
+          const filesData = await getFilesByFolder(currentFolderId);
+          console.log('Files received:', filesData); // Add this
+          setFiles(filesData);
+        } catch (error) {
+          console.error('Error fetching files:', error);
+        }
+      } else {
+        setFiles([]);
+      }
+    };
+    fetchFiles();
+  }, [currentFolderId]);
+
+  const handleDownloadFile = async (fileId: number, fileName: string) => {
+    try {
+      setIsLoading(true);
+      const blob = await downloadFile(fileId);
+
+      // Verify blob has content
+      if (blob.size === 0) {
+        throw new Error('Received empty file');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Show error to user
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRenameFile = async (file: File) => {
+    const newName = prompt('Enter new file name:', file.fileName);
+    if (newName && newName !== file.fileName) {
+      try {
+        const updatedFile = await updateFile(file.id, newName);
+        setFiles(files.map((f) => (f.id === file.id ? updatedFile : f)));
+      } catch (error) {
+        console.error('Error renaming file:', error);
+      }
+    }
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
+    switch (ext) {
+      case 'pdf':
+        return <FaFilePdf className="text-danger me-2" />;
+      case 'doc':
+      case 'docx':
+        return <FaFileWord className="text-primary me-2" />;
+      case 'xls':
+      case 'xlsx':
+        return <FaFileExcel className="text-success me-2" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FaFileImage className="text-info me-2" />;
+      default:
+        return <FaFileAlt className="text-secondary me-2" />;
+    }
+  };
+
+  // Folder
   const handleEditFolder = async (
     folderName: string,
     assignee?: string | null,
@@ -83,22 +204,38 @@ const FolderList: React.FC = () => {
     setEditingFolder(folder);
   };
 
+  // Delete for file and folder check
   const handleDeleteClick = (folderId: number) => {
     setSelectedFolderId(folderId);
+    setDeleteTarget('folder');
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteFileClick = (fileId: number) => {
+    setSelectedFileId(fileId);
+    setDeleteTarget('file');
     setShowDeleteModal(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (selectedFolderId === null) return;
-
     try {
-      await deleteFolder(selectedFolderId);
-      setFolders(folders.filter((f) => f.id !== selectedFolderId));
-    } catch (err) {
-      console.error('Failed to delete folder', err);
+      if (deleteTarget === 'folder' && selectedFolderId !== null) {
+        await deleteFolder(selectedFolderId);
+        setFolders(folders.filter((f) => f.id !== selectedFolderId));
+        toast.success('Folder deleted successfully.');
+      } else if (deleteTarget === 'file' && selectedFileId !== null) {
+        await deleteFile(selectedFileId);
+        setFiles(files.filter((f) => f.id !== selectedFileId));
+        toast.success('File deleted successfully.');
+      }
+    } catch (error) {
+      console.error('Error deleting', error);
+      toast.error(`Failed to delete ${deleteTarget}.`);
     } finally {
       setShowDeleteModal(false);
       setSelectedFolderId(null);
+      setSelectedFileId(null);
+      setDeleteTarget(null);
     }
   };
 
@@ -222,7 +359,7 @@ const FolderList: React.FC = () => {
                   Create Folder
                 </Dropdown.Item>
 
-                <Dropdown.Item onClick={() => setShowModal(true)}>
+                <Dropdown.Item onClick={() => setShowUploadModal(true)}>
                   <FaFileUpload className="me-2" />
                   Upload File
                 </Dropdown.Item>
@@ -230,7 +367,15 @@ const FolderList: React.FC = () => {
             </Dropdown>
           </Col>
         </Row>
-
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          pauseOnHover
+          draggable
+        />
         {/* Breadcrumb Navigation */}
         <Breadcrumb>
           <Breadcrumb.Item
@@ -258,7 +403,7 @@ const FolderList: React.FC = () => {
             <LoadingSpinner />
             <p>Loading folders...</p>
           </div>
-        ) : folders.length === 0 ? (
+        ) : folders.length === 0 && files.length === 0 ? (
           <div className="text-center my-5">
             <FaFolderOpen size={48} className="text-muted mb-3" />
             <p>No folders found</p>
@@ -321,7 +466,7 @@ const FolderList: React.FC = () => {
                       <div
                         className="custom-dropdown mt-2"
                         style={{ right: 0 }}
-                        ref={dropdownRef} // <-- attach ref here
+                        ref={dropdownRef}
                       >
                         <div
                           className="custom-dropdown-item"
@@ -346,6 +491,75 @@ const FolderList: React.FC = () => {
                   </td>
                 </tr>
               ))}
+
+              {/* Files */}
+              {files.map((file) => (
+                <tr
+                  key={`file-${file.id}`}
+                  className="align-middle"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    if (file.webViewLink) {
+                      window.open(file.webViewLink, '_blank');
+                    } else {
+                      console.error(
+                        'Web view link is not available for this file',
+                      );
+                    }
+                  }}
+                >
+                  <td>
+                    {getFileIcon(file.fileName)}
+                    <b>{file.fileName}</b>
+                  </td>
+                  <td>{file.filePath || '-'}</td>
+                  <td>{new Date(file.lastModified).toLocaleDateString()}</td>
+                  <td>-</td>
+                  <td>
+                    <Badge bg="secondary">Active</Badge>
+                  </td>
+                  <td className="text-end position-relative">
+                    <span
+                      className="text-dark p-0 border-0 cursor-pointer"
+                      onClick={() =>
+                        setActiveMenuId(
+                          activeMenuId === file.id ? null : file.id,
+                        )
+                      }
+                    >
+                      <BsThreeDotsVertical />
+                    </span>
+                    {activeMenuId === file.id && (
+                      <div
+                        className="custom-dropdown mt-2"
+                        style={{ right: 0 }}
+                        ref={dropdownRef}
+                      >
+                        <div
+                          className="custom-dropdown-item"
+                          onClick={() =>
+                            handleDownloadFile(file.id, file.fileName)
+                          }
+                        >
+                          <FaDownload /> Download
+                        </div>
+                        <div
+                          className="custom-dropdown-item"
+                          onClick={() => handleRenameFile(file)}
+                        >
+                          <FaRegEdit /> Rename
+                        </div>
+                        <div
+                          className="custom-dropdown-item"
+                          onClick={() => handleDeleteFileClick(file.id)}
+                        >
+                          <AiOutlineDelete /> Delete
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </StyledTable>
         )}
@@ -365,9 +579,18 @@ const FolderList: React.FC = () => {
 
       <DeleteConfirmModal
         show={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedFileId(null);
+          setSelectedFolderId(null);
+          setDeleteTarget(null);
+        }}
         onConfirm={handleConfirmDelete}
-        message="Are you sure you want to delete this folder?"
+        message={
+          deleteTarget === 'folder'
+            ? 'Are you sure you want to delete this folder?'
+            : 'Are you sure you want to delete this file?'
+        }
       />
 
       <EditFolderModal
@@ -376,6 +599,18 @@ const FolderList: React.FC = () => {
         onEdit={handleEditFolder}
         currentFolder={editingFolder}
         parentFolderName={
+          breadcrumbs.length > 0
+            ? breadcrumbs[breadcrumbs.length - 1].name
+            : undefined
+        }
+      />
+
+      <UploadFileModal
+        show={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUploadSuccess={handleUploadSuccess}
+        currentFolderId={currentFolderId}
+        currentFolderName={
           breadcrumbs.length > 0
             ? breadcrumbs[breadcrumbs.length - 1].name
             : undefined
