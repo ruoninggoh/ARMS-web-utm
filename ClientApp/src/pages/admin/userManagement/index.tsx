@@ -1,5 +1,5 @@
 import Footer from '@/components/Layout/Footer/footer';
-import AdminHeader from '@/components/Layout/Header/AdminHeader';
+import RoleBasedHeader from '@/components/Layout/Header/RoleBasedHeader';
 import AddUser from '@/components/userManagement/AddUser';
 import UserTable from '@/components/userManagement/UserTable';
 import React, { useState } from 'react';
@@ -14,7 +14,7 @@ const UserManagement: React.FC = () => {
 
   return (
     <Container>
-      <AdminHeader />
+      <RoleBasedHeader />
       <MainContent>
         <div className="mt-4">
           <h2 className="mb-5">User Management</h2>

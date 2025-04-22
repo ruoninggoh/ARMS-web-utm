@@ -1,5 +1,4 @@
 import Footer from '@/components/Layout/Footer/footer';
-import Header from '@/components/Layout/Header/header';
 import CloudCheckIcon from '@/images/dashboard/cloud-check.svg';
 // import DashboardPic from '@/images/dashboard/dashboardPic.jpg';
 import { getUser } from '@/apis/auth';
@@ -9,6 +8,7 @@ import AccessFile2 from '@/images/dashboard/accessFile2.jpg';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
+import RoleBasedHeader from '@/components/Layout/Header/RoleBasedHeader';
 
 const Dashboard: React.FC = () => {
   const user = getUser();
@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container>
-      <Header />
+      <RoleBasedHeader />
       <MainContent>
         <div className="mb-4">
           <h4>Hi, {user?.userName || 'User'}</h4>

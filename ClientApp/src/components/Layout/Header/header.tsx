@@ -25,11 +25,6 @@ const Header: React.FC = () => {
     redirect('academic');
   };
 
-  const handleUser = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    redirect('admin/userManagement');
-  };
-
   const handleProfileRedirect = (
     event: React.MouseEvent<HTMLAnchorElement>,
   ) => {
@@ -101,16 +96,6 @@ const Header: React.FC = () => {
                 style={{ cursor: 'pointer' }}
               >
                 Academic
-              </a>
-            </li>
-            <li className="nav-item mx-4">
-              <a
-                className="nav-link"
-                onClick={handleUser}
-                role="button"
-                style={{ cursor: 'pointer' }}
-              >
-                User Management
               </a>
             </li>
           </ul>

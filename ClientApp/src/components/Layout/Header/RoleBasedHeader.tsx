@@ -1,13 +1,15 @@
+import { logoutUser } from '@/apis/auth';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
+import { useUserRole } from '@/hooks/useUserRole';
 import FcLogo from '@/images/landing/fcLogo2.png';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-
 import React from 'react';
 
-const AdminHeader: React.FC = () => {
+const RoleBasedHeader: React.FC = () => {
   const redirect = usePageRedirection();
+  const role = useUserRole(); // Get the current user's role
 
   const handleDashboard = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -41,6 +43,27 @@ const AdminHeader: React.FC = () => {
     redirect('profile');
   };
 
+  const handleLogOut = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    logoutUser();
+    redirect('login');
+  };
+
+  // Determine which tabs to show based on role
+  const showUserManagement = role === 'admin';
+  const showApproval = [
+    'admin',
+    'head of department',
+    'deputy dean',
+    'dean',
+  ].includes(role);
+  const showAcademic = [
+    'admin',
+    'head of department',
+    'deputy dean',
+    'dean',
+    'lecturer',
+  ].includes(role);
   return (
     <nav className="navbar navbar-expand-lg bg-light border-bottom">
       <div className="container-fluid">
@@ -71,7 +94,7 @@ const AdminHeader: React.FC = () => {
         <div className="collapse navbar-collapse" id="navbarNavDropdown">
           {/* Center Aligned Links */}
           <ul className="navbar-nav mx-4">
-            <li className="nav-item  mx-4">
+            <li className="nav-item mx-4">
               <a
                 className="nav-link"
                 onClick={handleDashboard}
@@ -91,36 +114,45 @@ const AdminHeader: React.FC = () => {
                 About Us
               </a>
             </li>
-            <li className="nav-item mx-4">
-              <a
-                className="nav-link"
-                onClick={handleAcademic}
-                role="button"
-                style={{ cursor: 'pointer' }}
-              >
-                Academic Management
-              </a>
-            </li>
-            <li className="nav-item mx-4">
-              <a
-                className="nav-link"
-                onClick={handleUser}
-                role="button"
-                style={{ cursor: 'pointer' }}
-              >
-                User Management
-              </a>
-            </li>
-            <li className="nav-item mx-4">
-              <a
-                className="nav-link"
-                onClick={handleApproval}
-                role="button"
-                style={{ cursor: 'pointer' }}
-              >
-                Approval Status
-              </a>
-            </li>
+
+            {showAcademic && (
+              <li className="nav-item mx-4">
+                <a
+                  className="nav-link"
+                  onClick={handleAcademic}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Academic Management
+                </a>
+              </li>
+            )}
+
+            {showApproval && (
+              <li className="nav-item mx-4">
+                <a
+                  className="nav-link"
+                  onClick={handleApproval}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Approval Status
+                </a>
+              </li>
+            )}
+
+            {showUserManagement && (
+              <li className="nav-item mx-4">
+                <a
+                  className="nav-link"
+                  onClick={handleUser}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
+                >
+                  User Management
+                </a>
+              </li>
+            )}
           </ul>
 
           {/* Icons on the Right */}
@@ -153,7 +185,7 @@ const AdminHeader: React.FC = () => {
                   <hr className="dropdown-divider" />
                 </li>
                 <li>
-                  <a className="dropdown-item" href="#">
+                  <a className="dropdown-item" onClick={handleLogOut}>
                     Logout
                   </a>
                 </li>
@@ -166,4 +198,4 @@ const AdminHeader: React.FC = () => {
   );
 };
 
-export default AdminHeader;
+export default RoleBasedHeader;

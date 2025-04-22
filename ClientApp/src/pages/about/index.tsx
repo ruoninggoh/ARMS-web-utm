@@ -1,5 +1,5 @@
 import Footer from '@/components/Layout/Footer/footer';
-import Header from '@/components/Layout/Header/header';
+import RoleBasedHeader from '@/components/Layout/Header/RoleBasedHeader';
 import OrganizationChart from '@/images/about/OrganizationChart.png';
 import AboutPic from '@/images/about/aboutLatest.jpg';
 import React from 'react';
@@ -8,7 +8,7 @@ import styled from 'styled-components';
 const AboutUs: React.FC = () => {
   return (
     <PageContainer>
-      <Header />
+      <RoleBasedHeader />
       <ContentContainer>
         <BannerSection>
           <TextOverlay>

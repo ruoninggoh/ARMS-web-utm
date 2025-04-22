@@ -1,6 +1,6 @@
 import { fetchUserProfile, updateUserProfile } from '@/apis/profile';
 import Footer from '@/components/Layout/Footer/footer';
-import Header from '@/components/Layout/Header/header';
+import RoleBasedHeader from '@/components/Layout/Header/RoleBasedHeader';
 import EditableField from '@/components/Profile/EditableField';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -32,7 +32,7 @@ const ProfilePage: React.FC = () => {
     };
 
     loadProfile();
-  }, [redirect]); // ✅ Won't trigger infinite re-renders
+  }, [redirect]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value || '' }));
@@ -51,7 +51,7 @@ const ProfilePage: React.FC = () => {
 
   return (
     <ProfilePageContainer>
-      <Header />
+      <RoleBasedHeader />
       <ContentContainer>
         <FormContainer>
           <Title>Profile</Title>
