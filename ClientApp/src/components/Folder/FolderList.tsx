@@ -2,7 +2,7 @@ import {
   deleteFile,
   downloadFile,
   getFilesByFolder,
-  updateFile,
+  updateFileName,
 } from '@/apis/file';
 import {
   createFolder,
@@ -45,6 +45,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import styled from 'styled-components';
 import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import RenameFileModal from '../File/RenameFileModal';
 import UploadFileModal from '../File/UploadFileModal';
 import CreateFolderModal from './CreateFolderModal';
 import EditFolderModal from './EditFolderModal';
@@ -61,13 +62,14 @@ const FolderList: React.FC = () => {
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [deleteTarget, setDeleteTarget] = useState<'file' | 'folder' | null>(
     null,
   );
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [fileToRename, setFileToRename] = useState<File | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
 
@@ -135,16 +137,16 @@ const FolderList: React.FC = () => {
     }
   };
 
-  const handleRenameFile = async (file: File) => {
-    const newName = prompt('Enter new file name:', file.fileName);
-    if (newName && newName !== file.fileName) {
-      try {
-        const updatedFile = await updateFile(file.id, newName);
-        setFiles(files.map((f) => (f.id === file.id ? updatedFile : f)));
-      } catch (error) {
-        console.error('Error renaming file:', error);
-      }
-    }
+  // Replace the handleRenameFile function with:
+  const handleRenameClick = (file: File) => {
+    setFileToRename(file);
+    setShowRenameModal(true);
+  };
+
+  const handleRenameFile = async (newName: string) => {
+    if (!fileToRename) return;
+    const updatedFile = await updateFileName(fileToRename.id, newName);
+    setFiles(files.map((f) => (f.id === fileToRename.id ? updatedFile : f)));
   };
 
   const getFileIcon = (fileName: string) => {
@@ -498,13 +500,17 @@ const FolderList: React.FC = () => {
                   key={`file-${file.id}`}
                   className="align-middle"
                   style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    if (file.webViewLink) {
-                      window.open(file.webViewLink, '_blank');
-                    } else {
-                      console.error(
-                        'Web view link is not available for this file',
-                      );
+                  onClick={(e) => {
+                    // Type cast the target to Element to access closest()
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('.action-menu')) {
+                      if (file.webViewLink) {
+                        window.open(file.webViewLink, '_blank');
+                      } else {
+                        console.error(
+                          'Web view link is not available for this file',
+                        );
+                      }
                     }
                   }}
                 >
@@ -520,12 +526,13 @@ const FolderList: React.FC = () => {
                   </td>
                   <td className="text-end position-relative">
                     <span
-                      className="text-dark p-0 border-0 cursor-pointer"
-                      onClick={() =>
+                      className="text-dark p-0 border-0 cursor-pointer action-menu"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setActiveMenuId(
                           activeMenuId === file.id ? null : file.id,
-                        )
-                      }
+                        );
+                      }}
                     >
                       <BsThreeDotsVertical />
                     </span>
@@ -534,24 +541,32 @@ const FolderList: React.FC = () => {
                         className="custom-dropdown mt-2"
                         style={{ right: 0 }}
                         ref={dropdownRef}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div
                           className="custom-dropdown-item"
-                          onClick={() =>
-                            handleDownloadFile(file.id, file.fileName)
-                          }
-                        >
-                          <FaDownload /> Download
-                        </div>
-                        <div
-                          className="custom-dropdown-item"
-                          onClick={() => handleRenameFile(file)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRenameClick(file);
+                          }}
                         >
                           <FaRegEdit /> Rename
                         </div>
                         <div
                           className="custom-dropdown-item"
-                          onClick={() => handleDeleteFileClick(file.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadFile(file.id, file.fileName);
+                          }}
+                        >
+                          <FaDownload /> Download
+                        </div>
+                        <div
+                          className="custom-dropdown-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFileClick(file.id);
+                          }}
                         >
                           <AiOutlineDelete /> Delete
                         </div>
@@ -615,6 +630,13 @@ const FolderList: React.FC = () => {
             ? breadcrumbs[breadcrumbs.length - 1].name
             : undefined
         }
+      />
+
+      <RenameFileModal
+        show={showRenameModal}
+        onClose={() => setShowRenameModal(false)}
+        onRename={handleRenameFile}
+        currentFileName={fileToRename?.fileName || ''}
       />
     </Container>
   );

@@ -66,20 +66,16 @@ export const deleteFile = async (fileId: number) => {
   await apiClient.delete(`/Files/${fileId}`);
 };
 
-export const updateFile = async (
-  fileId: number,
-  newName?: string,
-  fileContent?: File,
-) => {
-  const formData = new FormData();
-  if (newName) formData.append('newName', newName);
-  if (fileContent) formData.append('file', fileContent);
-
-  const response = await apiClient.put(`/files/${fileId}`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
+export const updateFileName = async (fileId: number, newName: string) => {
+  const response = await apiClient.put(
+    `/files/${fileId}`,
+    { newName },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     },
-  });
+  );
   return response.data;
 };
 

@@ -64,9 +64,9 @@ import { logoutUser, refreshToken } from './auth';
 
 const apiClient = axios.create({
   baseURL: 'https://localhost:7224/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // headers: {
+  //   'Content-Type': 'application/json',
+  // },
 });
 
 let isRefreshing = false;
