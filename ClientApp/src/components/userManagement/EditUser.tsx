@@ -135,7 +135,7 @@ export default function EditUser({ utmid }: Props) {
                   <option>Admin</option>
                   <option>Lecturer</option>
                   <option>Program Coordinator</option>
-                  <option>Head of Department (Hod)</option>
+                  <option>Head of Department</option>
                   <option>Deputy Dean</option>
                   <option>Dean</option>
                 </Form.Select>
