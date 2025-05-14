@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { getAssigneeList } from '@/apis/folder';
+import { User } from '@/types/User/User';
+import React, { useEffect, useState } from 'react';
 import { Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -31,6 +33,25 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   } = useForm();
 
   const [creatingFolder, setCreatingFolder] = useState(false); // Added loading state
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    if (show) {
+      const fetchUsers = async () => {
+        setLoadingUsers(true);
+        try {
+          const assigneeList = await getAssigneeList();
+          setUsers(assigneeList);
+        } catch (error) {
+          console.error('Failed to fetch users:', error);
+        } finally {
+          setLoadingUsers(false);
+        }
+      };
+      fetchUsers();
+    }
+  }, [show]);
 
   const onSubmit = async (data: any) => {
     const formattedDate = data.dueDate
@@ -88,16 +109,25 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
 
           <Form.Group className="mb-3">
             <Form.Label>
-              <strong>Assignee To</strong>
+              <strong>Assignee To (Optional)</strong>
             </Form.Label>
-            <Form.Control
-              type="text"
-              {...register(
-                'assignee',
-                // , { required: 'Assignee is required' }
-              )}
-              placeholder="Lecturer Name"
-            />
+            {loadingUsers ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              <Form.Control
+                as="select"
+                {...register('assignee')}
+                defaultValue="none"
+              >
+                <option value="none">No assignee</option>
+                {users.map((user) => (
+                  <option key={user.utmid} value={user.userName}>
+                    {/* {user.userName} ({user.utmid})Removed the UTMID display */}
+                    {user.userName}
+                  </option>
+                ))}
+              </Form.Control>
+            )}
             {errors.assignee && (
               <ErrorWrapper>
                 <DeleteIcon onClick={() => handleClearError('assignee')} />

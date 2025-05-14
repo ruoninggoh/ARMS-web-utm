@@ -1,4 +1,6 @@
+import { getAssigneeList } from '@/apis/folder';
 import { Folder } from '@/types/Folder/folder';
+import { User } from '@/types/User/User';
 import React, { useEffect, useState } from 'react';
 import { Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -35,25 +37,38 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
   } = useForm();
 
   const [editingFolder, setEditingFolder] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Initialize form with current folder data including assignee
+  useEffect(() => {
+    if (show) {
+      const fetchUsers = async () => {
+        setLoadingUsers(true);
+        try {
+          const assigneeList = await getAssigneeList();
+          setUsers(assigneeList);
+        } catch (error) {
+          console.error('Failed to fetch users:', error);
+        } finally {
+          setLoadingUsers(false);
+        }
+      };
+      fetchUsers();
+    }
+  }, [show]);
+
+  // Initialize form with current folder data
   useEffect(() => {
     if (currentFolder) {
-      setValue('folderName', currentFolder.folderName);
-      setValue('assignee', currentFolder.lecturerUsername || '');
-
-      if (currentFolder.dueDate) {
-        const date = new Date(currentFolder.dueDate);
-        const formattedDate = date.toISOString().slice(0, 16);
-        setValue('dueDate', formattedDate);
-      }
-
-      console.log('Current folder:', {
-        username: currentFolder.lecturerUsername,
-        lastmodified: currentFolder.lastModified,
+      reset({
+        folderName: currentFolder.folderName,
+        assignee: currentFolder.lecturerUsername || 'none', // Set to 'none' if no assignee
+        dueDate: currentFolder.dueDate
+          ? new Date(currentFolder.dueDate).toISOString().slice(0, 16)
+          : '',
       });
     }
-  }, [currentFolder, setValue]);
+  }, [currentFolder, reset]);
 
   const onSubmit = async (data: any) => {
     const formattedDate = data.dueDate
@@ -63,7 +78,7 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
     try {
       await onEdit(
         data.folderName,
-        data.assignee || null, // Pass assignee
+        data.assignee === 'none' ? null : data.assignee, // Handle 'none' selection
         formattedDate,
       );
     } finally {
@@ -72,7 +87,7 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
   };
 
   const handleClearError = (field: string) => {
-    reset({ [field]: '' });
+    setValue(field, field === 'assignee' ? 'none' : '');
   };
 
   return (
@@ -109,13 +124,25 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>
-              <strong>Assignee To</strong>
+              <strong>Assignee To (Optional)</strong>
             </Form.Label>
-            <Form.Control
-              type="text"
-              {...register('assignee')}
-              placeholder="Lecturer Name"
-            />
+            {loadingUsers ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              <Form.Control
+                as="select"
+                {...register('assignee')}
+                defaultValue="none"
+              >
+                <option value="none">No assignee</option>
+                {users.map((user) => (
+                  <option key={user.utmid} value={user.userName}>
+                    {/* {user.userName} ({user.utmid})Removed the UTMID display */}
+                    {user.userName}
+                  </option>
+                ))}
+              </Form.Control>
+            )}
             {errors.assignee && (
               <ErrorWrapper>
                 <DeleteIcon onClick={() => handleClearError('assignee')} />

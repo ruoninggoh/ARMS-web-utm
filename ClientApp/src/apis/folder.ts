@@ -1,4 +1,5 @@
 import { Folder } from '@/types/Folder/folder';
+import { User } from '@/types/User/User';
 import apiClient from './api';
 
 export const getNestedFolders = async (
@@ -24,6 +25,7 @@ export const createFolder = async (data: {
   // Ensure empty array is sent instead of undefined
   const payload = {
     ...data,
+    lecturerUsername: data.lecturerUsername || null,
     parentFolderIds: data.parentFolderIds || [],
   };
 
@@ -52,4 +54,14 @@ export const deleteFolder = async (
 ): Promise<{ Message: string }> => {
   const response = await apiClient.delete(`/Folders/${folderId}`);
   return response.data;
+};
+
+export const getAssigneeList = async (): Promise<User[]> => {
+  try {
+    const response = await apiClient.get('/Account/assignable-users');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching non-admin users:', error);
+    throw error;
+  }
 };
