@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { getCommentsByFolder } from '@/apis/comment';
 import {
   deleteFile,
   downloadFile,
@@ -10,6 +12,7 @@ import {
   editFolder,
   getNestedFolders,
 } from '@/apis/folder';
+import { CommentDto } from '@/types/Comment/Comment';
 import { File } from '@/types/File/file';
 import { Folder } from '@/types/Folder/folder';
 import React, { useEffect, useRef, useState } from 'react';
@@ -20,6 +23,7 @@ import {
   Container,
   Dropdown,
   Row,
+  Spinner,
   Table,
 } from 'react-bootstrap';
 import { AiOutlineDelete } from 'react-icons/ai';
@@ -47,6 +51,7 @@ import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import RenameFileModal from '../File/RenameFileModal';
 import UploadFileModal from '../File/UploadFileModal';
+import CommentModal from './CommentModal';
 import CreateFolderModal from './CreateFolderModal';
 import EditFolderModal from './EditFolderModal';
 
@@ -59,6 +64,7 @@ const FolderList: React.FC = () => {
     { id: number; name: string }[]
   >([]);
   const [creatingFolder, setCreatingFolder] = useState(false);
+
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -72,6 +78,27 @@ const FolderList: React.FC = () => {
   const [fileToRename, setFileToRename] = useState<File | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+
+  // Comment
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [selectedFolderForComment, setSelectedFolderForComment] = useState<
+    number | null
+  >(null);
+  const [comments, setComments] = useState<CommentDto[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  // Comment
+  const fetchComments = async (folderId: number) => {
+    try {
+      setLoadingComments(true);
+      const commentsData = await getCommentsByFolder(folderId);
+      setComments(commentsData); // go chatgpt
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
 
   // File upload
   const handleUploadSuccess = async () => {
@@ -305,10 +332,22 @@ const FolderList: React.FC = () => {
     }
   };
 
-  const handleFolderClick = (folderId: number, folderName: string) => {
+  const handleFolderClick = async (folderId: number, folderName: string) => {
     console.log('Setting current folder ID to:', folderId); // Add this
     setCurrentFolderId(folderId);
     setBreadcrumbs((prev) => [...prev, { id: folderId, name: folderName }]);
+    await fetchComments(folderId);
+  };
+
+  const handleCommentClick = (folderId: number) => {
+    setSelectedFolderForComment(folderId);
+    setShowCommentModal(true);
+  };
+
+  const handleCommentAdded = async () => {
+    if (currentFolderId) {
+      await fetchComments(currentFolderId);
+    }
   };
 
   const handleBreadcrumbClick = (folderId: number) => {
@@ -322,13 +361,13 @@ const FolderList: React.FC = () => {
     setBreadcrumbs([]);
   };
 
-  const getFullDisplayPath = (folder: Folder) => {
-    // Root folder case
-    if (!folder.folderPath) return folder.folderName;
+  // const getFullDisplayPath = (folder: Folder) => {
+  //   // Root folder case
+  //   if (!folder.folderPath) return folder.folderName;
 
-    // All other cases
-    return `${folder.folderPath}/${folder.folderName}`;
-  };
+  //   // All other cases
+  //   return `${folder.folderPath}/${folder.folderName}`;
+  // };
 
   return (
     <Container className="mt-4 mb-5">
@@ -415,10 +454,11 @@ const FolderList: React.FC = () => {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Path</th>
+                {/* /<th>Path</th>  */}
                 <th>Last Modified</th>
                 <th>Due Date</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -435,7 +475,7 @@ const FolderList: React.FC = () => {
                     <FaFolder className="text-warning me-2 align-icon" />
                     <b>{folder.folderName}</b>
                   </td>
-                  <td>{getFullDisplayPath(folder)}</td>
+                  {/* <td>{getFullDisplayPath(folder)}</td> */}
                   <td>
                     {new Date(folder.lastModified).toLocaleDateString()}{' '}
                     {/* Show last modified */}
@@ -476,8 +516,27 @@ const FolderList: React.FC = () => {
                         >
                           <FaRegEdit /> Edit
                         </div>
-                        <div className="custom-dropdown-item">
-                          <FaRegCommentDots /> Comment
+                        <div
+                          className="custom-dropdown-item"
+                          onClick={() =>
+                            !loadingComments && handleCommentClick(folder.id)
+                          }
+                          style={
+                            loadingComments
+                              ? { opacity: 0.5, pointerEvents: 'none' }
+                              : {}
+                          }
+                        >
+                          {loadingComments ? (
+                            <Spinner
+                              animation="border"
+                              size="sm"
+                              className="me-2"
+                            />
+                          ) : (
+                            <FaRegCommentDots className="me-2" />
+                          )}
+                          Comment
                         </div>
                         <div
                           className="custom-dropdown-item"
@@ -518,7 +577,7 @@ const FolderList: React.FC = () => {
                     {getFileIcon(file.fileName)}
                     <b>{file.fileName}</b>
                   </td>
-                  <td>{file.filePath || '-'}</td>
+                  {/* <td>{file.filePath || '-'}</td> */}
                   <td>{new Date(file.lastModified).toLocaleDateString()}</td>
                   <td>-</td>
                   <td>
@@ -638,6 +697,13 @@ const FolderList: React.FC = () => {
         onRename={handleRenameFile}
         currentFileName={fileToRename?.fileName || ''}
       />
+
+      <CommentModal
+        show={showCommentModal}
+        onClose={() => setShowCommentModal(false)}
+        folderId={selectedFolderForComment || 0}
+        onCommentAdded={handleCommentAdded}
+      />
     </Container>
   );
 };
@@ -656,6 +722,42 @@ const StyledTable = styled(Table)`
     position: relative;
     top: -3px; /* Moves the icon slightly up */
   }
+
+  // /* Column width definitions */
+  // th:nth-child(1),
+  // td:nth-child(1) {
+  //   /* Name column */
+  //   width: 25%;
+  //   min-width: 200px; /* Minimum width */
+  // }
+
+  // th:nth-child(2),
+  // td:nth-child(2) {
+  //   /* Path column */
+  //   width: 30%;
+  //   max-width: 0; /* Helps with text overflow */
+  //   white-space: nowrap; /* Keep text on one line */
+  //   overflow: hidden;
+  //   text-overflow: ellipsis;
+  // }
+
+  // th:nth-child(3),
+  // td:nth-child(3) {
+  //   /* Last Modified */
+  //   width: 15%;
+  // }
+
+  // th:nth-child(4),
+  // td:nth-child(4) {
+  //   /* Due Date */
+  //   width: 15%;
+  // }
+
+  // th:nth-child(5),
+  // td:nth-child(5) {
+  //   /* Status */
+  //   width: 10%;
+  // }
 
   th {
     background-color: #f8f9fa !important;

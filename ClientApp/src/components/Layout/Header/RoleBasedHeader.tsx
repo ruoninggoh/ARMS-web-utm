@@ -1,4 +1,5 @@
 import { logoutUser } from '@/apis/auth';
+import NotificationDropdown from '@/components/Notification/NotificationDropdown';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import { useUserRole } from '@/hooks/useUserRole';
 import FcLogo from '@/images/landing/fcLogo2.png';
@@ -64,6 +65,7 @@ const RoleBasedHeader: React.FC = () => {
     'dean',
     'lecturer',
   ].includes(role);
+
   return (
     <nav className="navbar navbar-expand-lg bg-light border-bottom">
       <div className="container-fluid">
@@ -155,11 +157,11 @@ const RoleBasedHeader: React.FC = () => {
             )}
           </ul>
 
-          {/* Icons on the Right */}
           <ul className="navbar-nav ms-auto align-items-center">
-            <li className="nav-item me-3">
-              <i className="bi bi-bell fs-5"></i>
-            </li>
+            {/* Notification */}
+            <NotificationDropdown />
+
+            {/* Profile */}
             <li className="nav-item dropdown">
               <a
                 className="nav-link dropdown-toggle"
