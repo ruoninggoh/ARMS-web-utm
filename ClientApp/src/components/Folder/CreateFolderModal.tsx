@@ -16,7 +16,7 @@ interface CreateFolderModalProps {
     dueDate?: string | null,
   ) => void;
   currentFolderName?: string;
-  currentFolderId?: number | null; // Add this prop
+  currentFolderId?: number | null;
 }
 
 const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
