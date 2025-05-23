@@ -5,6 +5,7 @@ import UserTable from '@/components/userManagement/UserTable';
 import React, { useState } from 'react';
 import { Button, Col, Form, Row } from 'react-bootstrap';
 import { IoPersonAddSharp } from 'react-icons/io5';
+import { ToastContainer } from 'react-toastify';
 import styled from 'styled-components';
 
 const UserManagement: React.FC = () => {
@@ -19,7 +20,16 @@ const UserManagement: React.FC = () => {
         <div className="mt-4">
           <h2 className="mb-5">User Management</h2>
         </div>
-
+        <StyledToastContainer
+          position="top-right"
+          autoClose={4000} // 5 seconds for longer messages
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          pauseOnHover
+          draggable
+          draggablePercent={60}
+        />
         {/* Search & Filter */}
         <Row className="mb-4 align-items-center">
           <Col md={4}>
@@ -39,7 +49,7 @@ const UserManagement: React.FC = () => {
               <option value="Admin">Admin</option>
               <option value="Lecturer">Lecturer</option>
               <option value="Program Coordinator">Program Coordinator</option>
-              <option value="Hod">Hod</option>
+              <option value="Head of Department">Head of Department</option>
               <option value="Deputy Dean">Deputy Dean</option>
               <option value="Dean">Dean</option>
             </Form.Select>
@@ -93,5 +103,36 @@ const MainContent = styled.div`
   .action-button {
     min-width: 90px; /* Ensure both buttons are same width */
     text-align: center;
+  }
+`;
+
+const StyledToastContainer = styled(ToastContainer)`
+  /* Customize the toast container */
+  .Toastify__toast {
+    min-height: auto; /* Remove fixed height */
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap; /* Preserve line breaks */
+    word-break: break-word; /* Break long words */
+    max-width: 500px; /* Set maximum width */
+  }
+
+  /* Customize the error toast specifically */
+  .Toastify__toast--error {
+    background-color: #ff6b6b;
+    color: white;
+  }
+
+  /* Adjust the close button */
+  .Toastify__close-button {
+    color: white;
+    opacity: 0.8;
+    align-self: flex-start; /* Align to top */
+  }
+
+  /* Progress bar styling */
+  .Toastify__progress-bar {
+    background: rgba(255, 255, 255, 0.5);
   }
 `;
