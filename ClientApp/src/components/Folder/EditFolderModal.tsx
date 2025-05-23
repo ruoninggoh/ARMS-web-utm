@@ -64,16 +64,14 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
         folderName: currentFolder.folderName,
         assignee: currentFolder.lecturerUsername || 'none', // Set to 'none' if no assignee
         dueDate: currentFolder.dueDate
-          ? new Date(currentFolder.dueDate).toISOString().slice(0, 16)
+          ? formatDateTimeLocal(currentFolder.dueDate)
           : '',
       });
     }
   }, [currentFolder, reset]);
 
   const onSubmit = async (data: any) => {
-    const formattedDate = data.dueDate
-      ? new Date(data.dueDate).toISOString()
-      : null;
+    const formattedDate = data.dueDate ? convertToUTC(data.dueDate) : null;
     setEditingFolder(true);
     try {
       await onEdit(
@@ -88,6 +86,20 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
 
   const handleClearError = (field: string) => {
     setValue(field, field === 'assignee' ? 'none' : '');
+  };
+
+  const formatDateTimeLocal = (utcDateString: string) => {
+    const date = new Date(utcDateString);
+    const offset = date.getTimezoneOffset(); // in minutes
+    const localDate = new Date(date.getTime() - offset * 60000); // To Malaysia time
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  const convertToUTC = (localDataString: string) => {
+    const localDate = new Date(localDataString);
+    return new Date(
+      localDate.getTime() - localDate.getTimezoneOffset() * 60000,
+    ).toISOString();
   };
 
   return (
