@@ -1,5 +1,6 @@
 import { User } from '@/types/User/User';
 import apiClient from './api';
+import { ApiError } from './apiError';
 
 // Fetch all users
 export const getAllUsers = async (): Promise<User[]> => {
@@ -28,12 +29,13 @@ export const getUserByUTMID = async (UTMID: string): Promise<User> => {
 export const updateUser = async (
   UTMID: string,
   updatedUser: Partial<User>,
-): Promise<void> => {
+): Promise<{ success: boolean; error?: any }> => {
   try {
     await apiClient.put(`/Account/Admin/update/${UTMID}`, updatedUser);
+    return { success: true };
   } catch (error) {
     console.error('Error updating user:', error);
-    throw error;
+    return { success: false, error };
   }
 };
 
@@ -48,11 +50,17 @@ export const deleteUser = async (UTMID: string): Promise<void> => {
 };
 
 // Register a new user
-export const registerUser = async (newUser: Partial<User>): Promise<void> => {
+export const registerUser = async (
+  newUser: Partial<User>,
+): Promise<{ success: boolean; message?: string; error?: ApiError }> => {
   try {
     await apiClient.post('/Account/Admin/register', newUser);
-  } catch (error) {
+    return { success: true, message: 'User registered successfully!' };
+  } catch (error: unknown) {
     console.error('Error registering user:', error);
-    throw error;
+    const apiError = error as ApiError;
+    const message =
+      apiError.response?.data?.Message || 'Failed to register user';
+    return { success: false, message, error: apiError };
   }
 };
