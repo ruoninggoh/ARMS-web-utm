@@ -26,16 +26,26 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [customFileName, setCustomFileName] = useState<string>('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
-      console.log('Selected file:', {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type,
-      });
       setFile(selectedFile);
+      setCustomFileName(selectedFile.name.replace(/\.[^/.]+$/, '')); // remove extension
+      setError(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      setFile(droppedFile);
+      setCustomFileName(droppedFile.name.replace(/\.[^/.]+$/, ''));
       setError(null);
     }
   };
@@ -57,17 +67,6 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({
     e.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setFile(e.dataTransfer.files[0]);
-      setError(null);
-    }
-  };
-
   const handleUpload = async () => {
     if (!file) {
       setError('Please select a file to upload');
@@ -78,7 +77,13 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({
       setIsUploading(true);
       setUploadProgress(0);
 
-      await uploadFile(currentFolderId, file, (progressEvent) => {
+      // Rename the file if needed
+      const extension = file.name.split('.').pop();
+      const renamedFile = new File([file], `${customFileName}.${extension}`, {
+        type: file.type,
+      });
+
+      await uploadFile(currentFolderId, renamedFile, (progressEvent) => {
         if (progressEvent.total) {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total,
@@ -171,17 +176,34 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({
 
         {file && (
           <FilePreviewContainer>
-            <div className="file-info">
-              <strong>Selected file:</strong> {file.name}
-              <br />
-              <small className="text-muted">
-                Size: {(file.size / 1024 / 1024).toFixed(2)} MB
-              </small>
+            <div className="w-100">
+              <div className="file-info mb-2">
+                <strong>Selected file:</strong> {file.name}
+                <br />
+                <small className="text-muted">
+                  Size: {(file.size / 1024 / 1024).toFixed(2)} MB
+                </small>
+              </div>
+              <div className="d-flex align-items-center">
+                <label className="me-2">Rename file:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={customFileName}
+                  onChange={(e) => setCustomFileName(e.target.value)}
+                  placeholder="Enter new file name"
+                  style={{ maxWidth: '300px' }}
+                />
+                <span className="ms-2">.{file.name.split('.').pop()}</span>
+              </div>
             </div>
             <Button
               variant="link"
               size="sm"
-              onClick={() => setFile(null)}
+              onClick={() => {
+                setFile(null);
+                setCustomFileName('');
+              }}
               className="text-danger"
             >
               <RxCross2 />
