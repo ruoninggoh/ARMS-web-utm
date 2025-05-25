@@ -54,6 +54,7 @@ import UploadFileModal from '../File/UploadFileModal';
 import CommentModal from './CommentModal';
 import CreateFolderModal from './CreateFolderModal';
 import EditFolderModal from './EditFolderModal';
+import { FilePrefixDto } from '@/types/FileSet/FilePrefixDto';
 
 const FolderList: React.FC = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -305,6 +306,8 @@ const FolderList: React.FC = () => {
     folderName: string,
     assignee?: string | null,
     dueDate?: string | null,
+    fileSetType?: string | null,
+    requiredPrefixes?: FilePrefixDto[] | null,
   ) => {
     try {
       setCreatingFolder(true);
@@ -317,6 +320,8 @@ const FolderList: React.FC = () => {
         lecturerUsername: assignee || undefined,
         parentFolderIds: parentIds,
         dueDate: dueDate || undefined,
+        fileSetType: fileSetType || undefined,
+        requiredPrefixes: requiredPrefixes || undefined,
       });
 
       // Refresh with loading state

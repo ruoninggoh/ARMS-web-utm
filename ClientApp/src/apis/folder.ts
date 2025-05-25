@@ -1,3 +1,5 @@
+import { FilePrefixDto } from '@/types/FileSet/FilePrefixDto';
+import { FileSetDto } from '@/types/FileSet/FileSetDto';
 import { Folder } from '@/types/Folder/folder';
 import { User } from '@/types/User/User';
 import apiClient from './api';
@@ -19,6 +21,8 @@ export const createFolder = async (data: {
   lecturerUsername?: string;
   parentFolderIds: number[]; // Now properly handled as array
   dueDate?: string | null;
+  fileSetType?: string;
+  requiredPrefixes?: FilePrefixDto[];
 }): Promise<Folder> => {
   console.log('Sending to API:', data);
 
@@ -39,12 +43,16 @@ export const editFolder = async (data: {
   lecturerUsername?: string;
   dueDate?: string | null;
   parentFolderIds?: number[];
+  fileSetType?: string;
+  requiredPrefixes?: FilePrefixDto[];
 }): Promise<Folder> => {
   const response = await apiClient.put(`/Folders/${data.id}`, {
     folderName: data.folderName,
     lecturerUsername: data.lecturerUsername,
     dueDate: data.dueDate,
     parentFolderIds: data.parentFolderIds || [],
+    fileSetType: data.fileSetType,
+    requiredPrefixes: data.requiredPrefixes,
   });
   return response.data;
 };
@@ -64,4 +72,18 @@ export const getAssigneeList = async (): Promise<User[]> => {
     console.error('Error fetching non-admin users:', error);
     throw error;
   }
+};
+
+export const getFileSets = async (): Promise<FileSetDto[]> => {
+  const response = await apiClient.get('/Folders/file-sets');
+  return response.data;
+};
+
+export const getFileSetRequirements = async (
+  key: string,
+): Promise<FilePrefixDto[]> => {
+  const response = await apiClient.get(
+    `Folders/file-sets/${key}/requiremnents`,
+  );
+  return response.data;
 };
