@@ -257,13 +257,31 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
     }
   };
 
-  // Update the form submission to only include selected prefixes
   const onSubmit = async (data: FormData) => {
     const formattedDate = data.dueDate
       ? new Date(data.dueDate).toISOString()
       : null;
 
-    const selectedPrefixes = data.requiredPrefixes.filter(
+    // Merge default prefixes (from selected file set) with current requiredPrefixes
+    const selectedSet = fileSets.find((set) => set.key === data.fileSet);
+    const baseRequirements = selectedSet?.requirements || [];
+
+    const mergedPrefixes: FilePrefixDto[] = [
+      ...baseRequirements.map((req) => {
+        const matching = data.requiredPrefixes.find(
+          (p) => p.prefix === req.prefix,
+        );
+        return {
+          ...req,
+          isSelected: matching?.isSelected !== false, // default to true if not explicitly deselected
+        };
+      }),
+      ...data.requiredPrefixes.filter(
+        (p) => !baseRequirements.some((req) => req.prefix === p.prefix),
+      ),
+    ];
+
+    const selectedPrefixes = mergedPrefixes.filter(
       (p) => p.isSelected !== false,
     );
 
