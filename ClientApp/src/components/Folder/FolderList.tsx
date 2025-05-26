@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import api from '@/apis/api';
 import { getCommentsByFolder } from '@/apis/comment';
 import {
   deleteFile,
@@ -14,6 +15,7 @@ import {
 } from '@/apis/folder';
 import { CommentDto } from '@/types/Comment/Comment';
 import { File } from '@/types/File/file';
+import { FilePrefixDto } from '@/types/FileSet/FilePrefixDto';
 import { Folder } from '@/types/Folder/folder';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -54,7 +56,6 @@ import UploadFileModal from '../File/UploadFileModal';
 import CommentModal from './CommentModal';
 import CreateFolderModal from './CreateFolderModal';
 import EditFolderModal from './EditFolderModal';
-import { FilePrefixDto } from '@/types/FileSet/FilePrefixDto';
 
 const FolderList: React.FC = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -199,39 +200,92 @@ const FolderList: React.FC = () => {
     }
   };
 
-  // Folder
+  // Enhanced handleEditFolder with proper error handling
   const handleEditFolder = async (
     folderName: string,
     assignee?: string | null,
     dueDate?: string | null,
+    fileSetType?: string | null,
+    requiredPrefixes?: FilePrefixDto[] | null,
   ) => {
     if (!editingFolder) return;
 
     try {
+      setIsLoading(true);
+
       const updatedFolder = await editFolder({
         id: editingFolder.id,
         folderName,
-        lecturerUsername: assignee || undefined,
-        dueDate: dueDate || undefined,
-        parentFolderIds: editingFolder.parentFolderIds, // Add if needed
+        lecturerUsername: assignee ?? undefined,
+        dueDate: dueDate ?? undefined,
+        parentFolderIds: editingFolder.parentFolderIds ?? [],
+        fileSetType: fileSetType ?? undefined,
+        requiredPrefixes: requiredPrefixes ?? undefined,
       });
 
       // Update the folder in state
-      setFolders(
-        folders.map((f) =>
-          f.id === editingFolder.id ? { ...f, ...updatedFolder } : f,
+      setFolders((prevFolders) =>
+        prevFolders.map((f) =>
+          f.id === editingFolder.id
+            ? {
+                ...f,
+                ...updatedFolder,
+                // Ensure these fields are properly updated
+                fileSetType: updatedFolder.fileSetType,
+                requiredPrefixesJson: updatedFolder.requiredPrefixesJson,
+              }
+            : f,
         ),
       );
 
+      // If we're editing the current folder, update its name in breadcrumbs
+      if (currentFolderId === editingFolder.id) {
+        setBreadcrumbs((prev) =>
+          prev.length > 0
+            ? [
+                ...prev.slice(0, -1),
+                { ...prev[prev.length - 1], name: folderName },
+              ]
+            : prev,
+        );
+      }
+
       setEditingFolder(null);
+      toast.success('Folder updated successfully');
     } catch (error) {
       console.error('Error updating folder:', error);
+      toast.error('Failed to update folder');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Update the edit click handler
-  const handleEditClick = (folder: Folder) => {
-    setEditingFolder(folder);
+  // // Update the edit click handler
+  // const handleEditClick = (folder: Folder) => {
+  //   setEditingFolder(folder);
+  // };
+
+  // Enhanced handleEditClick to fetch complete folder data
+  const handleEditClick = async (folder: Folder) => {
+    try {
+      // Fetch complete folder data including prefixes
+      const response = await api.get(`/folders/${folder.id}`);
+      setEditingFolder({
+        ...response.data,
+        // Ensure these fields exist
+        fileSetType: response.data.fileSetType || null,
+        requiredPrefixesJson: response.data.requiredPrefixesJson || null,
+        // Maintain other existing properties
+        id: folder.id,
+        folderName: folder.folderName,
+        lecturerUsername: folder.lecturerUsername,
+        parentFolderIds: folder.parentFolderIds,
+      });
+    } catch (error) {
+      console.error('Error fetching folder details:', error);
+      // Fallback to existing data if API fails
+      setEditingFolder(folder);
+    }
   };
 
   // Delete for file and folder check
