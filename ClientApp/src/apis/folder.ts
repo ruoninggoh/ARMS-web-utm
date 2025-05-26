@@ -82,8 +82,6 @@ export const getFileSets = async (): Promise<FileSetDto[]> => {
 export const getFileSetRequirements = async (
   key: string,
 ): Promise<FilePrefixDto[]> => {
-  const response = await apiClient.get(
-    `Folders/file-sets/${key}/requiremnents`,
-  );
+  const response = await apiClient.get(`Folders/file-sets/${key}/requirements`);
   return response.data;
 };
