@@ -4,10 +4,12 @@ export interface Folder {
   folderPath: string;
   dueDate: string;
   driveFolderId: string;
-  lecturerUsername?: string; // Add this
+  lecturerUsername?: string;
+  fileSetType?: string | null; // Explicitly allow null
+  requiredPrefixesJson?: string | null; // Explicitly allow null
   files: File[];
   subFolders: Folder[];
-  lastModified: string; // Add this from AuditableBaseEntity
+  lastModified: string;
   parentFolderIds?: number[];
 }
 
