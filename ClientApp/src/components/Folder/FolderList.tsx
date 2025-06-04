@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import api from '@/apis/api';
 import { getCommentsByFolder } from '@/apis/comment';
 import {
@@ -17,6 +16,7 @@ import { CommentDto } from '@/types/Comment/Comment';
 import { File } from '@/types/File/file';
 import { FilePrefixDto } from '@/types/FileSet/FilePrefixDto';
 import { Folder } from '@/types/Folder/folder';
+import { FolderStatus } from '@/types/Folder/FolderStatus';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Badge,
@@ -24,10 +24,12 @@ import {
   Col,
   Container,
   Dropdown,
+  Overlay,
   Row,
   Spinner,
   Table,
 } from 'react-bootstrap';
+import { CheckCircleFill, ExclamationCircleFill } from 'react-bootstrap-icons';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import {
@@ -89,6 +91,120 @@ const FolderList: React.FC = () => {
   const [comments, setComments] = useState<CommentDto[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
 
+  const [folderStatuses, setFolderStatuses] = useState<
+    Record<number, FolderStatus>
+  >({});
+
+  const fetchFolderStatuses = async (folderIds: number[]) => {
+    const statuses: Record<number, FolderStatus> = {};
+
+    for (const folderId of folderIds) {
+      try {
+        const response = await api.get(`/folders/${folderId}/upload-status`);
+        const data = response.data;
+
+        statuses[folderId] = {
+          status: data.status || '',
+          missingFiles: data.missingFiles || [],
+          hasRequirements:
+            (data.missingFiles?.length ?? 0) > 0 ||
+            (data.statusItems?.length ?? 0) > 0,
+          statusItems: data.statusItems || [],
+        };
+      } catch (error) {
+        console.error(`Error fetching status for folder ${folderId}:`, error);
+        statuses[folderId] = {
+          status: '',
+          missingFiles: [],
+          hasRequirements: false,
+          statusItems: [],
+        };
+      }
+    }
+
+    setFolderStatuses(statuses);
+  };
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getNestedFolders(currentFolderId ?? undefined);
+        setFolders(data);
+
+        // Fetch statuses for all folders (we'll filter in the display)
+        if (data.length > 0) {
+          fetchFolderStatuses(data.map((f) => f.id));
+        }
+      } catch (error) {
+        console.error('Error fetching folders:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFolders();
+  }, [currentFolderId]);
+
+  const FolderStatusBadge = ({ folderId }: { folderId: number }) => {
+    const status = folderStatuses[folderId];
+    const [showTooltip, setShowTooltip] = useState(false);
+    const targetRef = useRef(null);
+
+    if (!status || !status.hasRequirements) {
+      return <StatusBadge bg="secondary">Not Applicable</StatusBadge>;
+    }
+
+    return (
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        style={{ display: 'inline-block', position: 'relative' }}
+      >
+        <StatusBadge
+          ref={targetRef}
+          bg={status.missingFiles.length === 0 ? 'success' : 'warning'}
+          style={{ cursor: 'pointer' }}
+        >
+          {status.status}
+        </StatusBadge>
+
+        <Overlay target={targetRef.current} show={showTooltip} placement="top">
+          {({ show: _show, ...props }) => (
+            <CustomTooltip {...props}>
+              <div className="tooltip-header">Document Upload Status</div>
+              <div className="tooltip-subheader">
+                Please name your files according to the required prefix format.
+              </div>
+              {status.statusItems?.map((item) => {
+                const isMissing = status.missingFiles.includes(item.prefix);
+                return (
+                  <div key={item.prefix} className="prefix-item">
+                    <div className="prefix-icon">
+                      {isMissing ? (
+                        <ExclamationCircleFill color="orange" size={14} />
+                      ) : (
+                        <CheckCircleFill color="green" size={14} />
+                      )}
+                    </div>
+                    <div className="prefix-content">
+                      <div className="prefix-name">{item.prefix}</div>
+                      {item.example && (
+                        <div>
+                          <small>Example: </small>
+                          <span className="prefix-example">{item.example}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </CustomTooltip>
+          )}
+        </Overlay>
+      </div>
+    );
+  };
+
   // Comment
   const fetchComments = async (folderId: number) => {
     try {
@@ -102,13 +218,20 @@ const FolderList: React.FC = () => {
     }
   };
 
-  // File upload
   const handleUploadSuccess = async () => {
     try {
       if (currentFolderId !== null) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         const files = await getFilesByFolder(currentFolderId);
         setFiles(files);
+
+        // Refresh status for current folder and parent folders
+        const foldersToRefresh = [
+          ...breadcrumbs.map((b) => b.id),
+          currentFolderId,
+        ];
+        fetchFolderStatuses(foldersToRefresh);
+
         toast.success('File uploaded successfully.');
       }
     } catch (error) {
@@ -546,7 +669,7 @@ const FolderList: React.FC = () => {
                   </td>
 
                   <td>
-                    <Badge bg="secondary">Active</Badge>
+                    <FolderStatusBadge folderId={folder.id} />
                   </td>
 
                   <td
@@ -884,5 +1007,70 @@ const StyledTable = styled(Table)`
     margin-right: 10px;
     position: relative;
     top: -1px; /* Move icons up slightly */
+  }
+`;
+
+const StatusBadge = styled(Badge)`
+  cursor: ${(props) => (props.bg === 'secondary' ? 'default' : 'help')};
+  min-width: 50px;
+  display: inline-block;
+  text-align: center;
+  padding: 5px 8px;
+  font-size: 0.85rem;
+`;
+
+const CustomTooltip = styled.div`
+  background-color: #eaefef;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  max-width: 350px;
+  max-height: 300px;
+  overflow-y: auto;
+  color: #333;
+  z-index: 9999;
+
+  .tooltip-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+    color: #333446;
+  }
+
+  .tooltip-subheader {
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: #666;
+  }
+
+  .prefix-item {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .prefix-icon {
+    margin-right: 8px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .prefix-content {
+    flex-grow: 1;
+  }
+
+  .prefix-name {
+    font-weight: 500;
+  }
+
+  .prefix-example {
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 2px;
+    font-family: monospace;
+    background-color: #f5f5f5;
+    padding: 2px 4px;
+    border-radius: 3px;
+    display: inline-block;
   }
 `;

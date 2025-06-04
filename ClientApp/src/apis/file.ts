@@ -1,5 +1,4 @@
 import type { AxiosProgressEvent } from 'axios';
-import axios from 'axios';
 import apiClient from './api';
 
 export const uploadFile = async (
@@ -7,44 +6,27 @@ export const uploadFile = async (
   file: File,
   onProgress?: (progressEvent: AxiosProgressEvent) => void,
 ) => {
-  // Create a new FormData instance
   const formData = new FormData();
+  formData.append('file', file);
 
-  // Append file with EXACT field name expected by backend
-  formData.append('file', file); // lowercase 'file' to match most ASP.NET Core defaults
-
-  // Append folderId if provided
   if (folderId !== null) {
     formData.append('folderId', folderId.toString());
   }
 
-  // Create a new axios instance with no defaults
-  const uploadClient = axios.create({
-    baseURL: 'https://localhost:7224', // Your API base URL
-  });
-
-  // Configuration for the request
-  const config = {
-    headers: {
-      // DO NOT set Content-Type here - let browser set it automatically
-    },
-    onUploadProgress: onProgress,
-    withCredentials: true, // Include if you need authentication
-    transformRequest: (data: any, headers: any) => {
-      // Remove any default Content-Type header
-      if (headers) {
-        delete headers['Content-Type'];
-      }
-      return data;
-    },
-  };
-
   try {
-    const response = await uploadClient.post(
-      '/api/files/upload',
-      formData,
-      config,
-    );
+    const response = await apiClient.post('/files/upload', formData, {
+      headers: {
+        // Don't set Content-Type; browser will set it for FormData
+      },
+      onUploadProgress: onProgress,
+      transformRequest: (data: any, headers: any) => {
+        if (headers) {
+          delete headers['Content-Type'];
+        }
+        return data;
+      },
+    });
+
     return response.data;
   } catch (error: any) {
     console.error('Upload failed. Details:', {
