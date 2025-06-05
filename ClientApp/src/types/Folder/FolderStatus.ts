@@ -10,4 +10,6 @@ export interface FolderStatus {
   missingFiles: string[];
   hasRequirements: boolean;
   statusItems?: StatusItem[]; // add this line
+  totalRequired: number;
+  uploadedCount: number;
 }

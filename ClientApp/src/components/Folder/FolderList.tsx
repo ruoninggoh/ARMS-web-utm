@@ -98,6 +98,17 @@ const FolderList: React.FC = () => {
   const fetchFolderStatuses = async (folderIds: number[]) => {
     const statuses: Record<number, FolderStatus> = {};
 
+    // First get current statuses to preserve non-updated folders
+    setFolderStatuses((prev) => {
+      // Preserve existing statuses for folders not being refreshed
+      folderIds.forEach((id) => {
+        if (prev[id]) {
+          statuses[id] = prev[id];
+        }
+      });
+      return prev;
+    });
+
     for (const folderId of folderIds) {
       try {
         const response = await api.get(`/folders/${folderId}/upload-status`);
@@ -106,10 +117,11 @@ const FolderList: React.FC = () => {
         statuses[folderId] = {
           status: data.status || '',
           missingFiles: data.missingFiles || [],
-          hasRequirements:
-            (data.missingFiles?.length ?? 0) > 0 ||
-            (data.statusItems?.length ?? 0) > 0,
+          hasRequirements: data.hasRequirements || false,
+
           statusItems: data.statusItems || [],
+          totalRequired: data.totalRequired || 0,
+          uploadedCount: data.uploadedCount || 0,
         };
       } catch (error) {
         console.error(`Error fetching status for folder ${folderId}:`, error);
@@ -118,6 +130,8 @@ const FolderList: React.FC = () => {
           missingFiles: [],
           hasRequirements: false,
           statusItems: [],
+          totalRequired: 0,
+          uploadedCount: 0,
         };
       }
     }
@@ -360,6 +374,10 @@ const FolderList: React.FC = () => {
             : f,
         ),
       );
+
+      // Refresh status for ALL visible folders, not just the edited one
+      const allVisibleFolderIds = folders.map((f) => f.id);
+      await fetchFolderStatuses(allVisibleFolderIds);
 
       // If we're editing the current folder, update its name in breadcrumbs
       if (currentFolderId === editingFolder.id) {
