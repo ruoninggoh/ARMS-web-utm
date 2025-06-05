@@ -1,4 +1,5 @@
 import api from '@/apis/api';
+import { getUser } from '@/apis/auth';
 import { getCommentsByFolder } from '@/apis/comment';
 import {
   deleteFile,
@@ -12,6 +13,8 @@ import {
   editFolder,
   getNestedFolders,
 } from '@/apis/folder';
+import { usePageRedirection } from '@/hooks/usePageRedirection';
+import DashboardPic from '@/images/dashboard/UTM-image.jpg';
 import { CommentDto } from '@/types/Comment/Comment';
 import { File } from '@/types/File/file';
 import { FilePrefixDto } from '@/types/FileSet/FilePrefixDto';
@@ -401,11 +404,6 @@ const FolderList: React.FC = () => {
     }
   };
 
-  // // Update the edit click handler
-  // const handleEditClick = (folder: Folder) => {
-  //   setEditingFolder(folder);
-  // };
-
   // Enhanced handleEditClick to fetch complete folder data
   const handleEditClick = async (folder: Folder) => {
     try {
@@ -481,22 +479,6 @@ const FolderList: React.FC = () => {
     };
   }, []);
 
-  // Fetch folders based on current context
-  useEffect(() => {
-    const fetchFolders = async () => {
-      setIsLoading(true);
-      try {
-        const data = await getNestedFolders(currentFolderId ?? undefined);
-        setFolders(data);
-      } catch (error) {
-        console.error('Error fetching folders:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFolders();
-  }, [currentFolderId]);
-
   const handleCreateFolder = async (
     folderName: string,
     assignee?: string | null,
@@ -569,17 +551,39 @@ const FolderList: React.FC = () => {
   //   return `${folder.folderPath}/${folder.folderName}`;
   // };
 
+  const user = getUser();
+  const redirect = usePageRedirection();
+
+  console.log('Retrieved user:', user); // Check if user data is correctly retrieved
+  console.log(localStorage.getItem('user'));
+  useEffect(() => {
+    if (!user) {
+      console.log('no user');
+
+      redirect('login');
+    }
+  }, [redirect, user]);
+  if (!user) return null; // Prevent UI flicker before redirect
+
   return (
     <Container className="mt-4 mb-5">
       <MainContent>
-        <Row className="mt-2 mb-3 d-flex align-items-center">
+        <div className="mb-4">
+          <h4>Hi, {user?.userName || 'User'}</h4>
+        </div>
+        <Banner>
+          <BannerText>
+            Welcome to Academic Resource Management System
+          </BannerText>
+        </Banner>
+        {/* <Row className="mt-2 mb-3 d-flex align-items-center">
           <Col>
             <h4>
               <FaFolder className="me-2" />
               <i>Academic Material</i>
             </h4>
           </Col>
-        </Row>
+        </Row> */}
         <Row>
           <Col className="text-end">
             <Dropdown className="text-end mb-3">
@@ -911,7 +915,26 @@ const FolderList: React.FC = () => {
 export default FolderList;
 
 const MainContent = styled.div`
-  margin-bottom: 150px;
+  margin-bottom: 250px;
+`;
+
+const Banner = styled.div`
+  background: url(${DashboardPic}) center/cover no-repeat;
+
+  text-align: center;
+  color: white;
+  padding: 80px 20px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const BannerText = styled.h1`
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 15px;
 `;
 
 const StyledTable = styled(Table)`
