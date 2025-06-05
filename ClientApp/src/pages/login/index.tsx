@@ -19,7 +19,7 @@ const FormPage: React.FC = () => {
     try {
       const response = await loginUser(utmId, password);
       console.log('Login successful:', response);
-      redirect('dashboard'); // Redirect on success
+      redirect('academic'); // Redirect on success
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
     }

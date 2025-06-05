@@ -12,10 +12,10 @@ const RoleBasedHeader: React.FC = () => {
   const redirect = usePageRedirection();
   const role = useUserRole(); // Get the current user's role
 
-  const handleDashboard = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    redirect('dashboard');
-  };
+  // const handleDashboard = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  //   event.preventDefault();
+  //   redirect('dashboard');
+  // };
 
   const handleAboutUs = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -96,7 +96,7 @@ const RoleBasedHeader: React.FC = () => {
         <div className="collapse navbar-collapse" id="navbarNavDropdown">
           {/* Center Aligned Links */}
           <ul className="navbar-nav mx-4">
-            <li className="nav-item mx-4">
+            {/* <li className="nav-item mx-4">
               <a
                 className="nav-link"
                 onClick={handleDashboard}
@@ -105,7 +105,8 @@ const RoleBasedHeader: React.FC = () => {
               >
                 Dashboard
               </a>
-            </li>
+            </li> */}
+
             <li className="nav-item mx-4">
               <a
                 className="nav-link"
@@ -130,6 +131,19 @@ const RoleBasedHeader: React.FC = () => {
               </li>
             )}
 
+            {/* {showAcademic && (
+              <li className="nav-item mx-4">
+                <a
+                  className="nav-link"
+                  onClick={handleAcademic}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Academic Management
+                </a>
+              </li>
+            )} */}
+
             {showApproval && (
               <li className="nav-item mx-4">
                 <a
@@ -138,7 +152,7 @@ const RoleBasedHeader: React.FC = () => {
                   role="button"
                   style={{ cursor: 'pointer' }}
                 >
-                  Approval Status
+                  Approval Management
                 </a>
               </li>
             )}
