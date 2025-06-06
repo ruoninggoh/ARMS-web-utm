@@ -9,10 +9,20 @@ export const getNestedFolders = async (
 ): Promise<Folder[]> => {
   const params = parentId ? { parentFolderId: parentId } : {};
   const response = await apiClient.get('/Folders/nested', { params });
+
   return response.data.map((folder: any) => ({
     ...folder,
-    lecturerUsername: folder.lecturerUsername, // Ensure this is included
-    lastModified: folder.lastModified || new Date().toISOString(), // Fallback if not provided
+    lecturerUsername: folder.lecturerUsername,
+    lastModified: folder.lastModified || new Date().toISOString(),
+    // Ensure status properties are included with defaults
+    hasRequirements: folder.hasRequirements || false,
+    hasDirectRequirements: folder.hasDirectRequirements || false,
+    totalRequired: folder.totalRequired || 0,
+    uploadedCount: folder.uploadedCount || 0,
+    statusMessage: folder.statusMessage || folder.message, // handles both response formats
+    statusItems: folder.statusItems || [],
+    missingPrefixes: folder.missingPrefixes || [],
+    completionPercentage: folder.completionPercentage || 0,
   }));
 };
 
