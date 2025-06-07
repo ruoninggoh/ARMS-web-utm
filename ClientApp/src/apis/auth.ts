@@ -1,35 +1,5 @@
-import apiClient from './api';
-
-// export const loginUser = async (utmId: string, password: string) => {
-//   try {
-//     const response = await apiClient.post('/Account/login', {
-//       utmId,
-//       password,
-//     });
-
-//     const userData = response.data.data;
-//     console.log('Full API Response:', response.data);
-
-//     // Check if the token exists in the API response
-//     if (userData && userData.jwToken) {
-//       console.log('Storing JWT:', userData.jwToken);
-//       localStorage.setItem('jwt', userData.jwToken);
-//       localStorage.setItem('refreshToken', userData.refreshToken); // ✅ Add this line
-//       localStorage.setItem('user', JSON.stringify(userData));
-//     } else {
-//       console.error('JWT is missing from API response');
-//     }
-
-//     return userData;
-//   } catch (error: any) {
-//     console.error(
-//       'Login error:',
-//       error.response?.data?.message || error.message,
-//     );
-//     throw new Error(error.response?.data?.message || 'Login failed');
-//   }
-// };
 import axios from 'axios';
+import apiClient from './api';
 
 export const getUser = () => {
   const user = localStorage.getItem('user');
@@ -55,12 +25,18 @@ export const loginUser = async (utmId: string, password: string) => {
     if (userData && userData.jwToken && userData.refreshToken) {
       localStorage.setItem('jwt', userData.jwToken);
       localStorage.setItem('refreshToken', userData.refreshToken);
+
+      // Store the complete user object including roles
+      const userWithRoles = {
+        ...userData,
+        roles: userData.roles || [], // Ensure roles array exists
+      };
       localStorage.setItem('user', JSON.stringify(userData));
+
+      return userWithRoles;
     } else {
       throw new Error('Authentication failed - no tokens received');
     }
-
-    return userData;
   } catch (error: any) {
     console.error(
       'Login error:',
