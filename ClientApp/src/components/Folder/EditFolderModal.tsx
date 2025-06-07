@@ -36,6 +36,7 @@ interface EditFolderModalProps {
   ) => Promise<void>;
   currentFolder: Folder | null;
   parentFolderName?: string;
+  isTopLevel?: boolean;
 }
 
 interface FileSetInfo {
@@ -50,6 +51,7 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
   onEdit,
   currentFolder,
   parentFolderName,
+  isTopLevel = false,
 }) => {
   const {
     register,
@@ -204,7 +206,7 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
 
       fetchRequirements();
     }
-  }, [selectedFileSet, enablePrefixRequirements]);
+  }, [selectedFileSet, enablePrefixRequirements, requiredPrefixes, setValue]);
 
   const getAllRequirements = () => {
     const currentFileSet = fileSets.find((set) => set.key === selectedFileSet);
@@ -276,38 +278,6 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
     }
   };
 
-  // const togglePrefixSelection = (prefix: string, isCustom: boolean) => {
-  //   const currentPrefixes = requiredPrefixes || [];
-
-  //   if (isCustom) {
-  //     // Remove custom prefix completely
-  //     setValue(
-  //       'requiredPrefixes',
-  //       currentPrefixes.filter((p) => p.prefix !== prefix),
-  //     );
-  //   } else {
-  //     // Toggle default prefix
-  //     const fileSet = fileSets.find((set) => set.key === selectedFileSet);
-  //     const prefixDefinition = fileSet?.requirements.find(
-  //       (r) => r.prefix === prefix,
-  //     );
-
-  //     if (prefixDefinition) {
-  //       const exists = currentPrefixes.some((p) => p.prefix === prefix);
-  //       if (exists) {
-  //         // Remove if already exists
-  //         setValue(
-  //           'requiredPrefixes',
-  //           currentPrefixes.filter((p) => p.prefix !== prefix),
-  //         );
-  //       } else {
-  //         // Add if doesn't exist
-  //         setValue('requiredPrefixes', [...currentPrefixes, prefixDefinition]);
-  //       }
-  //     }
-  //   }
-  // };
-
   const togglePrefixSelection = (prefix: string, isCustom: boolean) => {
     const currentPrefixes = requiredPrefixes || [];
 
@@ -349,22 +319,32 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
     const formattedDate = data.dueDate ? convertToUTC(data.dueDate) : null;
 
     // Get the current file set's requirements
-    const currentFileSet = fileSets.find((set) => set.key === data.fileSet);
-    const fileSetRequirements = currentFileSet?.requirements || [];
+    // For top-level folders, exclude fileSetType and requiredPrefixes
+    const fileSetType = isTopLevel
+      ? null
+      : data.enablePrefixRequirements
+      ? data.fileSet
+      : null;
 
     // Combine selected default prefixes with custom prefixes
-    const selectedPrefixes = data.enablePrefixRequirements
+    const selectedPrefixes = isTopLevel
+      ? null
+      : data.enablePrefixRequirements
       ? [
           // Include default prefixes that are selected
-          ...fileSetRequirements.filter((req) =>
-            (data.requiredPrefixes || []).some(
-              (p: any) => p.prefix === req.prefix,
-            ),
-          ),
+          ...(fileSets
+            .find((set) => set.key === data.fileSet)
+            ?.requirements.filter((req) =>
+              (data.requiredPrefixes || []).some(
+                (p: any) => p.prefix === req.prefix,
+              ),
+            ) || []),
           // Include all custom prefixes
           ...(data.requiredPrefixes || []).filter(
             (p: any) =>
-              !fileSetRequirements.some((req) => req.prefix === p.prefix),
+              !fileSets.some((set) =>
+                set.requirements.some((req) => req.prefix === p.prefix),
+              ),
           ),
         ]
       : null;
@@ -375,7 +355,7 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
         data.folderName,
         data.assignee === 'none' ? null : data.assignee,
         formattedDate,
-        data.enablePrefixRequirements ? data.fileSet : null,
+        fileSetType,
         selectedPrefixes,
       );
     } finally {
@@ -397,8 +377,12 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
     ).toISOString();
   };
 
-  const handleClearError = (field: string) => {
-    setValue(field, field === 'assignee' ? 'none' : '');
+  const handleClearError = (field: keyof typeof errors) => {
+    if (field === 'assignee') {
+      setValue(field, 'none');
+    } else {
+      setValue(field as any, ''); // Use type assertion if necessary
+    }
   };
 
   return (
@@ -484,180 +468,185 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
           </div>
 
           {/* Prefix Requirements Section */}
-          <Accordion
-            activeKey={accordionKey}
-            onSelect={(key) => setAccordionKey(key as string)}
-          >
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>
-                <div className="d-flex align-items-center">
-                  <Form.Check
-                    type="switch"
-                    id="enable-prefix-requirements"
-                    label={
-                      <span className="ms-2">Checklist For Course File</span>
-                    }
-                    checked={enablePrefixRequirements}
-                    onChange={(e) => {
-                      setValue('enablePrefixRequirements', e.target.checked);
-                      if (!e.target.checked) {
-                        setValue('fileSet', '');
-                        setValue('requiredPrefixes', []);
+          {!isTopLevel && (
+            <Accordion
+              activeKey={accordionKey}
+              onSelect={(key) => setAccordionKey(key as string)}
+            >
+              <Accordion.Item eventKey="0">
+                <Accordion.Header>
+                  <div className="d-flex align-items-center">
+                    <Form.Check
+                      type="switch"
+                      id="enable-prefix-requirements"
+                      label={
+                        <span className="ms-2">Checklist For Course File</span>
                       }
-                    }}
-                    className="pe-2"
-                  />
-                </div>
-              </Accordion.Header>
-              <Accordion.Body className="pt-3">
-                {enablePrefixRequirements && (
-                  <>
-                    <Alert
-                      variant="info"
-                      className="d-flex align-items-center mb-3"
-                    >
-                      <FaInfoCircle className="me-2 flex-shrink-0" />
-                      <span>
-                        System will validate files based on these prefixes.
-                      </span>
-                    </Alert>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>Select Default File Set</Form.Label>
-                      {loadingFileSets ? (
-                        <Spinner animation="border" size="sm" />
-                      ) : (
-                        <Form.Select {...register('fileSet')}>
-                          {fileSets.map((set) => (
-                            <option key={set.key} value={set.key}>
-                              {set.label}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      )}
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>
-                        Course File Checklist
-                        <small className="text-muted ms-2">
-                          (System will validate these prefixes)
-                        </small>
-                      </Form.Label>
-
-                      <ListGroup
-                        variant="flush"
-                        className="border rounded mb-3"
-                        style={{ maxHeight: '200px', overflowY: 'auto' }}
+                      checked={enablePrefixRequirements}
+                      onChange={(e) => {
+                        setValue('enablePrefixRequirements', e.target.checked);
+                        if (!e.target.checked) {
+                          setValue('fileSet', '');
+                          setValue('requiredPrefixes', []);
+                        }
+                      }}
+                      className="pe-2"
+                    />
+                  </div>
+                </Accordion.Header>
+                <Accordion.Body className="pt-3">
+                  {enablePrefixRequirements && (
+                    <>
+                      <Alert
+                        variant="info"
+                        className="d-flex align-items-center mb-3"
                       >
-                        {getAllRequirements().map((req) => (
-                          <ListGroup.Item
-                            key={req.prefix}
-                            className="d-flex align-items-center py-2 px-3"
-                          >
-                            <div
-                              className="d-flex w-100 align-items-center"
-                              onClick={() =>
-                                togglePrefixSelection(req.prefix, req.isCustom)
-                              }
-                              style={{ cursor: 'pointer' }}
+                        <FaInfoCircle className="me-2 flex-shrink-0" />
+                        <span>
+                          System will validate files based on these prefixes.
+                        </span>
+                      </Alert>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>Select Default File Set</Form.Label>
+                        {loadingFileSets ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <Form.Select {...register('fileSet')}>
+                            {fileSets.map((set) => (
+                              <option key={set.key} value={set.key}>
+                                {set.label}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        )}
+                      </Form.Group>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>
+                          Course File Checklist
+                          <small className="text-muted ms-2">
+                            (System will validate these prefixes)
+                          </small>
+                        </Form.Label>
+
+                        <ListGroup
+                          variant="flush"
+                          className="border rounded mb-3"
+                          style={{ maxHeight: '200px', overflowY: 'auto' }}
+                        >
+                          {getAllRequirements().map((req) => (
+                            <ListGroup.Item
+                              key={req.prefix}
+                              className="d-flex align-items-center py-2 px-3"
                             >
-                              <Form.Check
-                                type="checkbox"
-                                id={`prefix-${req.prefix}`}
-                                checked={req.isSelected}
-                                onChange={() =>
+                              <div
+                                className="d-flex w-100 align-items-center"
+                                onClick={() =>
                                   togglePrefixSelection(
                                     req.prefix,
                                     req.isCustom,
                                   )
                                 }
-                                className="me-3"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="flex-grow-1">
-                                <div className="d-flex align-items-center">
-                                  <Badge
-                                    bg={req.isCustom ? 'warning' : 'info'}
-                                    className="me-2"
-                                  >
-                                    {req.prefix}
-                                    {req.isCustom && (
-                                      <span className="ms-1">
-                                        <FaStar size={10} />
-                                      </span>
-                                    )}
-                                  </Badge>
-                                  <span>{req.displayName}</span>
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <Form.Check
+                                  type="checkbox"
+                                  id={`prefix-${req.prefix}`}
+                                  checked={req.isSelected}
+                                  onChange={() =>
+                                    togglePrefixSelection(
+                                      req.prefix,
+                                      req.isCustom,
+                                    )
+                                  }
+                                  className="me-3"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <div className="flex-grow-1">
+                                  <div className="d-flex align-items-center">
+                                    <Badge
+                                      bg={req.isCustom ? 'warning' : 'info'}
+                                      className="me-2"
+                                    >
+                                      {req.prefix}
+                                      {req.isCustom && (
+                                        <span className="ms-1">
+                                          <FaStar size={10} />
+                                        </span>
+                                      )}
+                                    </Badge>
+                                    <span>{req.displayName}</span>
+                                  </div>
+                                  <small className="text-muted d-block mt-1">
+                                    Example: {req.example}
+                                  </small>
                                 </div>
-                                <small className="text-muted d-block mt-1">
-                                  Example: {req.example}
-                                </small>
                               </div>
-                            </div>
-                          </ListGroup.Item>
-                        ))}
-                      </ListGroup>
+                            </ListGroup.Item>
+                          ))}
+                        </ListGroup>
 
-                      <div className="mt-4">
-                        <h6>Add Additional File</h6>
-                        <small className="text-muted">
-                          Please follow the required naming convention, such as
-                          including an underscore (_) before the file name.
-                        </small>
+                        <div className="mt-4">
+                          <h6>Add Additional File</h6>
+                          <small className="text-muted">
+                            Please follow the required naming convention, such
+                            as including an underscore (_) before the file name.
+                          </small>
 
-                        <div className="mb-3">
-                          <InputGroup>
-                            <FormControl
-                              placeholder="Prefix (e.g., A1.4_)"
-                              value={newPrefix}
-                              onChange={(e) =>
-                                setValue('newPrefix', e.target.value)
-                              }
-                              isInvalid={!!prefixErrors.prefix}
-                            />
-                            <FormControl
-                              placeholder="Display name (e.g., LecturerNote)"
-                              value={newDisplayName}
-                              onChange={(e) =>
-                                setValue('newDisplayName', e.target.value)
-                              }
-                              isInvalid={!!prefixErrors.displayName}
-                            />
-                            <Button
-                              variant="outline-primary"
-                              onClick={addCustomPrefix}
-                              disabled={
-                                !newPrefix.trim() || !newDisplayName.trim()
-                              }
-                            >
-                              <FaPlus /> Add
-                            </Button>
-                          </InputGroup>
+                          <div className="mb-3">
+                            <InputGroup>
+                              <FormControl
+                                placeholder="Prefix (e.g., A1.4_)"
+                                value={newPrefix}
+                                onChange={(e) =>
+                                  setValue('newPrefix', e.target.value)
+                                }
+                                isInvalid={!!prefixErrors.prefix}
+                              />
+                              <FormControl
+                                placeholder="Display name (e.g., LecturerNote)"
+                                value={newDisplayName}
+                                onChange={(e) =>
+                                  setValue('newDisplayName', e.target.value)
+                                }
+                                isInvalid={!!prefixErrors.displayName}
+                              />
+                              <Button
+                                variant="outline-primary"
+                                onClick={addCustomPrefix}
+                                disabled={
+                                  !newPrefix.trim() || !newDisplayName.trim()
+                                }
+                              >
+                                <FaPlus /> Add
+                              </Button>
+                            </InputGroup>
 
-                          {prefixErrors.prefix && (
-                            <div className="text-danger small mt-1">
-                              {prefixErrors.prefix}
-                            </div>
-                          )}
-                          {prefixErrors.displayName && (
-                            <div className="text-danger small mt-1">
-                              {prefixErrors.displayName}
-                            </div>
-                          )}
+                            {prefixErrors.prefix && (
+                              <div className="text-danger small mt-1">
+                                {prefixErrors.prefix}
+                              </div>
+                            )}
+                            {prefixErrors.displayName && (
+                              <div className="text-danger small mt-1">
+                                {prefixErrors.displayName}
+                              </div>
+                            )}
 
-                          <Form.Text className="text-muted">
-                            Example filename will be: {newPrefix}
-                            {newDisplayName.replace(/\s+/g, '')}
-                          </Form.Text>
+                            <Form.Text className="text-muted">
+                              Example filename will be: {newPrefix}
+                              {newDisplayName.replace(/\s+/g, '')}
+                            </Form.Text>
+                          </div>
                         </div>
-                      </div>
-                    </Form.Group>
-                  </>
-                )}
-              </Accordion.Body>
-            </Accordion.Item>
-          </Accordion>
+                      </Form.Group>
+                    </>
+                  )}
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
+          )}
 
           <Modal.Footer className="justify-content-center">
             <Button

@@ -33,6 +33,7 @@ interface CreateFolderModalProps {
   ) => void;
   currentFolderName?: string;
   currentFolderId?: number | null;
+  isTopLevel?: boolean;
 }
 
 interface FormData {
@@ -57,6 +58,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   onClose,
   onCreate,
   currentFolderName,
+  isTopLevel = false,
 }) => {
   const {
     register,
@@ -67,12 +69,16 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
     watch,
   } = useForm<FormData>({
     defaultValues: {
+      folderName: '',
+      assignee: 'none',
+      dueDate: '',
       enablePrefixRequirements: false,
       fileSet: '',
-      requiredPrefixes: [],
+      requiredPrefixes: [] as FilePrefixDto[],
       newPrefix: '',
       newDisplayName: '',
     },
+    mode: 'onSubmit', // default, runs validation on submit
   });
 
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -88,6 +94,10 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   const newDisplayName = watch('newDisplayName');
 
   const [accordionKey, setAccordionKey] = useState<string | null>(null);
+  const [prefixErrors, setPrefixErrors] = useState({
+    prefix: '',
+    displayName: '',
+  });
 
   useEffect(() => {
     if (enablePrefixRequirements) {
@@ -177,11 +187,6 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
 
     return [...baseRequirements, ...customRequirements];
   };
-  // Add state for validation errors
-  const [prefixErrors, setPrefixErrors] = useState({
-    prefix: '',
-    displayName: '',
-  });
 
   const validatePrefixFields = () => {
     const errors = {
@@ -285,14 +290,26 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
       (p) => p.isSelected !== false,
     );
 
+    // For top-level folders, exclude fileSetType and requiredPrefixes
+    const fileSetType = isTopLevel
+      ? null
+      : data.enablePrefixRequirements
+      ? data.fileSet
+      : null;
+    const requiredPrefixes = isTopLevel
+      ? null
+      : data.enablePrefixRequirements
+      ? selectedPrefixes
+      : null;
+
     setCreatingFolder(true);
     try {
       await onCreate(
         data.folderName,
         data.assignee === 'none' ? null : data.assignee,
         formattedDate,
-        data.enablePrefixRequirements ? data.fileSet : null,
-        data.enablePrefixRequirements ? selectedPrefixes : null,
+        fileSetType,
+        requiredPrefixes,
       );
       reset();
       onClose();
@@ -304,7 +321,9 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   return (
     <Modal show={show} onHide={onClose} centered size="lg">
       <Modal.Header closeButton className="border-bottom-0 pb-0">
-        <Modal.Title>Create New Folder</Modal.Title>
+        <Modal.Title>
+          {isTopLevel ? 'Create New Semester' : 'Create New Folder'}
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Form onSubmit={handleSubmit(onSubmit)}>
@@ -338,21 +357,38 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
               {loadingUsers ? (
                 <Spinner animation="border" size="sm" />
               ) : (
-                <Form.Select {...register('assignee')}>
-                  <option value="none">No assignee</option>
-                  {users.map((user) => (
-                    <option key={user.utmid} value={user.userName}>
-                      {user.userName}
-                    </option>
-                  ))}
-                </Form.Select>
+                <>
+                  <Form.Select
+                    isInvalid={!!errors.assignee}
+                    {...register('assignee', {
+                      validate: (value) =>
+                        !isTopLevel ||
+                        (value && value !== 'none') ||
+                        'Assignee is required, please assign to Dean and Deputy Dean.',
+                    })}
+                  >
+                    <option value="none">No assignee</option>
+                    {users.map((user) => (
+                      <option key={user.utmid} value={user.userName}>
+                        {user.userName}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </>
               )}
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>Due Date</Form.Label>
               <InputGroup>
-                <Form.Control type="datetime-local" {...register('dueDate')} />
+                <Form.Control
+                  type="datetime-local"
+                  isInvalid={!!errors.dueDate}
+                  {...register('dueDate', {
+                    validate: (value) =>
+                      !isTopLevel || !!value || 'Due date is required',
+                  })}
+                />
                 <InputGroup.Text>
                   <FaCalendarAlt />
                 </InputGroup.Text>
@@ -360,184 +396,189 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
             </Form.Group>
           </div>
 
-          {/* Prefix Requirements Section */}
-          <Accordion
-            activeKey={accordionKey}
-            onSelect={(key) =>
-              setAccordionKey(
-                typeof key === 'string' || key === null ? key : null,
-              )
-            }
-          >
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>
-                <div className="d-flex align-items-center">
-                  <Form.Check
-                    type="switch"
-                    id="enable-prefix-requirements"
-                    label={
-                      <span className="ms-2">Checklist For Course File</span>
-                    }
-                    checked={enablePrefixRequirements}
-                    onChange={(e) =>
-                      setValue('enablePrefixRequirements', e.target.checked)
-                    }
-                    className="pe-2"
-                  />
-                </div>
-              </Accordion.Header>
-              <Accordion.Body className="pt-3">
-                {enablePrefixRequirements && (
-                  <>
-                    <Alert
-                      variant="info"
-                      className="d-flex align-items-center mb-3"
-                    >
-                      <FaInfoCircle className="me-2 flex-shrink-0" />
-                      <span>
-                        System will validate files based on these prefixes.
-                      </span>
-                    </Alert>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>Select Default File Set</Form.Label>
-                      {loadingFileSets ? (
-                        <Spinner animation="border" size="sm" />
-                      ) : (
-                        <Form.Select {...register('fileSet')}>
-                          {fileSets.map((set) => (
-                            <option key={set.key} value={set.key}>
-                              {set.label}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      )}
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>
-                        Course File Checklist
-                        <small className="text-muted ms-2">
-                          (System will validate these prefixes)
-                        </small>
-                      </Form.Label>
-
-                      <ListGroup
-                        variant="flush"
-                        className="border rounded mb-3"
-                        style={{ maxHeight: '200px', overflowY: 'auto' }}
+          {/* Conditionally show prefix requirements section */}
+          {!isTopLevel && (
+            <Accordion
+              activeKey={accordionKey}
+              onSelect={(key) =>
+                setAccordionKey(
+                  typeof key === 'string' || key === null ? key : null,
+                )
+              }
+            >
+              <Accordion.Item eventKey="0">
+                <Accordion.Header>
+                  <div className="d-flex align-items-center">
+                    <Form.Check
+                      type="switch"
+                      id="enable-prefix-requirements"
+                      label={
+                        <span className="ms-2">Checklist For Course File</span>
+                      }
+                      checked={enablePrefixRequirements}
+                      onChange={(e) =>
+                        setValue('enablePrefixRequirements', e.target.checked)
+                      }
+                      className="pe-2"
+                    />
+                  </div>
+                </Accordion.Header>
+                <Accordion.Body className="pt-3">
+                  {enablePrefixRequirements && (
+                    <>
+                      <Alert
+                        variant="info"
+                        className="d-flex align-items-center mb-3"
                       >
-                        {getAllRequirements().map((req) => (
-                          <ListGroup.Item
-                            key={req.prefix}
-                            className="d-flex align-items-center py-2 px-3"
-                          >
-                            <div
-                              className="d-flex w-100 align-items-center"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent event bubbling
-                                togglePrefixSelection(req.prefix, req.isCustom);
-                              }}
-                              style={{ cursor: 'pointer' }}
+                        <FaInfoCircle className="me-2 flex-shrink-0" />
+                        <span>
+                          System will validate files based on these prefixes.
+                        </span>
+                      </Alert>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>Select Default File Set</Form.Label>
+                        {loadingFileSets ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <Form.Select {...register('fileSet')}>
+                            {fileSets.map((set) => (
+                              <option key={set.key} value={set.key}>
+                                {set.label}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        )}
+                      </Form.Group>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>
+                          Course File Checklist
+                          <small className="text-muted ms-2">
+                            (System will validate these prefixes)
+                          </small>
+                        </Form.Label>
+
+                        <ListGroup
+                          variant="flush"
+                          className="border rounded mb-3"
+                          style={{ maxHeight: '200px', overflowY: 'auto' }}
+                        >
+                          {getAllRequirements().map((req) => (
+                            <ListGroup.Item
+                              key={req.prefix}
+                              className="d-flex align-items-center py-2 px-3"
                             >
-                              <Form.Check
-                                type="checkbox"
-                                id={`prefix-${req.prefix}`}
-                                checked={req.isSelected}
-                                onChange={() =>
+                              <div
+                                className="d-flex w-100 align-items-center"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent event bubbling
                                   togglePrefixSelection(
                                     req.prefix,
                                     req.isCustom,
-                                  )
-                                }
-                                className="me-3"
-                                onClick={(e) => e.stopPropagation()} // Prevent double trigger
-                              />
-                              <div className="flex-grow-1">
-                                <div className="d-flex align-items-center">
-                                  <Badge
-                                    bg={req.isCustom ? 'warning' : 'info'}
-                                    className="me-2"
-                                  >
-                                    {req.prefix}
-                                    {req.isCustom && (
-                                      <span className="ms-1">
-                                        <FaStar size={10} />{' '}
-                                        {/* Small icon to indicate custom */}
-                                      </span>
-                                    )}
-                                  </Badge>
-                                  <span>{req.displayName}</span>
+                                  );
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <Form.Check
+                                  type="checkbox"
+                                  id={`prefix-${req.prefix}`}
+                                  checked={req.isSelected}
+                                  onChange={() =>
+                                    togglePrefixSelection(
+                                      req.prefix,
+                                      req.isCustom,
+                                    )
+                                  }
+                                  className="me-3"
+                                  onClick={(e) => e.stopPropagation()} // Prevent double trigger
+                                />
+                                <div className="flex-grow-1">
+                                  <div className="d-flex align-items-center">
+                                    <Badge
+                                      bg={req.isCustom ? 'warning' : 'info'}
+                                      className="me-2"
+                                    >
+                                      {req.prefix}
+                                      {req.isCustom && (
+                                        <span className="ms-1">
+                                          <FaStar size={10} />{' '}
+                                          {/* Small icon to indicate custom */}
+                                        </span>
+                                      )}
+                                    </Badge>
+                                    <span>{req.displayName}</span>
+                                  </div>
+                                  <small className="text-muted d-block mt-1">
+                                    Example: {req.example}
+                                  </small>
                                 </div>
-                                <small className="text-muted d-block mt-1">
-                                  Example: {req.example}
-                                </small>
                               </div>
-                            </div>
-                          </ListGroup.Item>
-                        ))}
-                      </ListGroup>
+                            </ListGroup.Item>
+                          ))}
+                        </ListGroup>
 
-                      <div className="mt-4">
-                        <h6>Add Additional File</h6>
-                        <small className="text-muted">
-                          Please follow the required naming convention, such as
-                          including an underscore (_) before the file name.
-                        </small>
+                        <div className="mt-4">
+                          <h6>Add Additional File</h6>
+                          <small className="text-muted">
+                            Please follow the required naming convention, such
+                            as including an underscore (_) before the file name.
+                          </small>
 
-                        <div className="mb-3">
-                          <InputGroup>
-                            <FormControl
-                              placeholder="Prefix (e.g., A1.4_)"
-                              value={newPrefix}
-                              onChange={(e) =>
-                                setValue('newPrefix', e.target.value)
-                              }
-                              isInvalid={!!prefixErrors.prefix}
-                            />
-                            <FormControl
-                              placeholder="Display name (e.g., LecturerNote)"
-                              value={newDisplayName}
-                              onChange={(e) =>
-                                setValue('newDisplayName', e.target.value)
-                              }
-                              isInvalid={!!prefixErrors.displayName}
-                            />
-                            <Button
-                              variant="outline-primary"
-                              onClick={addCustomPrefix}
-                              disabled={
-                                !newPrefix.trim() || !newDisplayName.trim()
-                              }
-                            >
-                              <FaPlus /> Add
-                            </Button>
-                          </InputGroup>
+                          <div className="mb-3">
+                            <InputGroup>
+                              <FormControl
+                                placeholder="Prefix (e.g., A1.4_)"
+                                value={newPrefix}
+                                onChange={(e) =>
+                                  setValue('newPrefix', e.target.value)
+                                }
+                                isInvalid={!!prefixErrors.prefix}
+                              />
+                              <FormControl
+                                placeholder="Display name (e.g., LecturerNote)"
+                                value={newDisplayName}
+                                onChange={(e) =>
+                                  setValue('newDisplayName', e.target.value)
+                                }
+                                isInvalid={!!prefixErrors.displayName}
+                              />
+                              <Button
+                                variant="outline-primary"
+                                onClick={addCustomPrefix}
+                                disabled={
+                                  !newPrefix.trim() || !newDisplayName.trim()
+                                }
+                              >
+                                <FaPlus /> Add
+                              </Button>
+                            </InputGroup>
 
-                          {/* Separate error messages for each field */}
-                          {prefixErrors.prefix && (
-                            <div className="text-danger small mt-1">
-                              {prefixErrors.prefix}
-                            </div>
-                          )}
-                          {prefixErrors.displayName && (
-                            <div className="text-danger small mt-1">
-                              {prefixErrors.displayName}
-                            </div>
-                          )}
+                            {/* Separate error messages for each field */}
+                            {prefixErrors.prefix && (
+                              <div className="text-danger small mt-1">
+                                {prefixErrors.prefix}
+                              </div>
+                            )}
+                            {prefixErrors.displayName && (
+                              <div className="text-danger small mt-1">
+                                {prefixErrors.displayName}
+                              </div>
+                            )}
 
-                          <Form.Text className="text-muted">
-                            Example filename will be: {newPrefix}
-                            {newDisplayName.replace(/\s+/g, '')}
-                          </Form.Text>
+                            <Form.Text className="text-muted">
+                              Example filename will be: {newPrefix}
+                              {newDisplayName.replace(/\s+/g, '')}
+                            </Form.Text>
+                          </div>
                         </div>
-                      </div>
-                    </Form.Group>
-                  </>
-                )}
-              </Accordion.Body>
-            </Accordion.Item>
-          </Accordion>
+                      </Form.Group>
+                    </>
+                  )}
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
+          )}
 
           <Modal.Footer className="border-top-0 pt-0">
             <Button
@@ -559,7 +600,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
                   Creating...
                 </>
               ) : (
-                'Create Folder'
+                `Create ${isTopLevel ? 'Semester' : 'Folder'}`
               )}
             </Button>
           </Modal.Footer>

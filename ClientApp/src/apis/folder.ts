@@ -56,15 +56,20 @@ export const editFolder = async (data: {
   fileSetType?: string;
   requiredPrefixes?: FilePrefixDto[];
 }): Promise<Folder> => {
-  const response = await apiClient.put(`/Folders/${data.id}`, {
-    folderName: data.folderName,
-    lecturerUsername: data.lecturerUsername,
-    dueDate: data.dueDate,
-    parentFolderIds: data.parentFolderIds || [],
-    fileSetType: data.fileSetType,
-    requiredPrefixes: data.requiredPrefixes,
-  });
-  return response.data;
+  try {
+    const response = await apiClient.put(`/Folders/${data.id}`, {
+      folderName: data.folderName,
+      lecturerUsername: data.lecturerUsername,
+      dueDate: data.dueDate,
+      parentFolderIds: data.parentFolderIds || [],
+      fileSetType: data.fileSetType,
+      requiredPrefixes: data.requiredPrefixes,
+    });
+    return response.data;
+  } catch (error: any) {
+    // Throw the error message from backend or a default message
+    throw new Error(error.response?.data?.message || 'Failed to update folder');
+  }
 };
 
 export const deleteFolder = async (
