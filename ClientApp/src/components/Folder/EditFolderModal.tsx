@@ -92,14 +92,14 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
   });
 
   useEffect(() => {
-    if (enablePrefixRequirements) {
-      setAccordionKey('0');
-    } else {
+    if (!enablePrefixRequirements) {
       setAccordionKey(null);
-      // Don't reset requiredPrefixes here!
-      // The user might have prefilled data.
+      setValue('fileSet', '');
+      setValue('requiredPrefixes', []);
+    } else {
+      setAccordionKey('0');
     }
-  }, [enablePrefixRequirements]);
+  }, [enablePrefixRequirements, setValue]);
 
   useEffect(() => {
     if (show) {
@@ -190,15 +190,8 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
       const fetchRequirements = async () => {
         try {
           const requirements = await getFileSetRequirements(selectedFileSet);
-          const currentPrefixes = requiredPrefixes || [];
-
-          // Keep only custom prefixes when changing file sets
-          const customPrefixes = currentPrefixes.filter(
-            (p) => !requirements.some((r) => r.prefix === p.prefix),
-          );
-
-          // Set all file set requirements (unticked) plus any custom prefixes
-          setValue('requiredPrefixes', [...customPrefixes]);
+          // When a new file set is selected, pre-select ALL its prefixes
+          setValue('requiredPrefixes', requirements);
         } catch (error) {
           console.error('Failed to fetch requirements:', error);
         }
@@ -206,14 +199,14 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
 
       fetchRequirements();
     }
-  }, [selectedFileSet, enablePrefixRequirements, requiredPrefixes, setValue]);
+  }, [selectedFileSet, enablePrefixRequirements, setValue]);
 
   const getAllRequirements = () => {
     const currentFileSet = fileSets.find((set) => set.key === selectedFileSet);
     const fileSetRequirements = currentFileSet?.requirements || [];
     const savedPrefixes = requiredPrefixes || [];
 
-    // Show all prefixes from the selected file set
+    // Show all prefixes from the selected file set, marking which are selected
     const defaultPrefixes = fileSetRequirements.map((req) => ({
       ...req,
       isCustom: false,
@@ -280,6 +273,10 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
 
   const togglePrefixSelection = (prefix: string, isCustom: boolean) => {
     const currentPrefixes = requiredPrefixes || [];
+    const fileSet = fileSets.find((set) => set.key === selectedFileSet);
+    const prefixDefinition = fileSet?.requirements.find(
+      (r) => r.prefix === prefix,
+    );
 
     if (isCustom) {
       // Remove custom prefix completely
@@ -287,67 +284,49 @@ const EditFolderModal: React.FC<EditFolderModalProps> = ({
         'requiredPrefixes',
         currentPrefixes.filter((p) => p.prefix !== prefix),
       );
-    } else {
+    } else if (prefixDefinition) {
       // Toggle default prefix
-      const fileSet = fileSets.find((set) => set.key === selectedFileSet);
-      const prefixDefinition = fileSet?.requirements.find(
-        (r) => r.prefix === prefix,
-      );
+      const exists = currentPrefixes.some((p) => p.prefix === prefix);
 
-      if (prefixDefinition) {
-        const exists = currentPrefixes.some((p) => p.prefix === prefix);
-        if (exists) {
-          // Remove if already exists
-          setValue(
-            'requiredPrefixes',
-            currentPrefixes.filter((p) => p.prefix !== prefix),
-          );
-        } else {
-          // Add if doesn't exist (with all required fields)
-          setValue('requiredPrefixes', [
-            ...currentPrefixes,
-            {
-              ...prefixDefinition,
-              isSelected: true, // Ensure this field exists
-            },
-          ]);
-        }
-      }
+      setValue(
+        'requiredPrefixes',
+        exists
+          ? currentPrefixes.filter((p) => p.prefix !== prefix)
+          : [
+              ...currentPrefixes,
+              {
+                ...prefixDefinition,
+                isSelected: true,
+              },
+            ],
+      );
     }
   };
+
   const onSubmit = async (data: any) => {
     const formattedDate = data.dueDate ? convertToUTC(data.dueDate) : null;
 
-    // Get the current file set's requirements
-    // For top-level folders, exclude fileSetType and requiredPrefixes
-    const fileSetType = isTopLevel
-      ? null
-      : data.enablePrefixRequirements
-      ? data.fileSet
-      : null;
+    let fileSetType: string | null = null;
+    let selectedPrefixes: FilePrefixDto[] = [];
 
-    // Combine selected default prefixes with custom prefixes
-    const selectedPrefixes = isTopLevel
-      ? null
-      : data.enablePrefixRequirements
-      ? [
-          // Include default prefixes that are selected
-          ...(fileSets
-            .find((set) => set.key === data.fileSet)
-            ?.requirements.filter((req) =>
-              (data.requiredPrefixes || []).some(
-                (p: any) => p.prefix === req.prefix,
-              ),
-            ) || []),
-          // Include all custom prefixes
-          ...(data.requiredPrefixes || []).filter(
-            (p: any) =>
-              !fileSets.some((set) =>
-                set.requirements.some((req) => req.prefix === p.prefix),
-              ),
-          ),
-        ]
-      : null;
+    if (!isTopLevel && data.enablePrefixRequirements) {
+      fileSetType = data.fileSet;
+      selectedPrefixes = [
+        ...(fileSets
+          .find((set) => set.key === data.fileSet)
+          ?.requirements.filter((req) =>
+            (data.requiredPrefixes || []).some(
+              (p: any) => p.prefix === req.prefix,
+            ),
+          ) || []),
+        ...(data.requiredPrefixes || []).filter(
+          (p: any) =>
+            !fileSets.some((set) =>
+              set.requirements.some((req) => req.prefix === p.prefix),
+            ),
+        ),
+      ];
+    }
 
     setEditingFolder(true);
     try {
