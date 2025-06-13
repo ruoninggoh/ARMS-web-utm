@@ -9,7 +9,7 @@ const Academic: React.FC = () => {
     <Container>
       <RoleBasedHeader />
       <MainContent>
-        <FolderList />
+        <FolderList showWelcome />
       </MainContent>
       <Footer />
     </Container>
