@@ -63,7 +63,11 @@ import CommentModal from './CommentModal';
 import CreateFolderModal from './CreateFolderModal';
 import EditFolderModal from './EditFolderModal';
 
-const FolderList: React.FC = () => {
+interface FolderListProps {
+  showWelcome?: boolean;
+}
+
+const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
@@ -605,14 +609,18 @@ const FolderList: React.FC = () => {
   return (
     <Container className="mt-4 mb-5">
       <MainContent>
-        <div className="mb-4">
-          <h4>Hi, {user?.userName || 'User'}</h4>
-        </div>
-        <Banner>
-          <BannerText>
-            Welcome to Academic Resource Management System
-          </BannerText>
-        </Banner>
+        {showWelcome && (
+          <>
+            <div className="mb-4">
+              <h4>Hi, {user?.userName || 'User'}</h4>
+            </div>
+            <Banner>
+              <BannerText>
+                Welcome to Academic Resource Management System
+              </BannerText>
+            </Banner>
+          </>
+        )}
         <Row className="mb-4">
           <Col md={8} className="d-flex align-items-center">
             <Form.Label className="me-2 mb-0">Semester: </Form.Label>
