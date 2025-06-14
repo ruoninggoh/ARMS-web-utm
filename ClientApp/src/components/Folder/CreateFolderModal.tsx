@@ -360,12 +360,15 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
                 <>
                   <Form.Select
                     isInvalid={!!errors.assignee}
-                    {...register('assignee', {
-                      validate: (value) =>
-                        !isTopLevel ||
-                        (value && value !== 'none') ||
-                        'Assignee is required, please assign to Dean and Deputy Dean.',
-                    })}
+                    {...register(
+                      'assignee',
+                      //   , {
+                      //   validate: (value) =>
+                      //     !isTopLevel ||
+                      //     (value && value !== 'none') ||
+                      //     'Assignee is required, please assign to Dean and Deputy Dean.',
+                      // }
+                    )}
                   >
                     <option value="none">No assignee</option>
                     {users.map((user) => (
@@ -384,10 +387,14 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
                 <Form.Control
                   type="datetime-local"
                   isInvalid={!!errors.dueDate}
-                  {...register('dueDate', {
-                    validate: (value) =>
-                      !isTopLevel || !!value || 'Due date is required',
-                  })}
+                  {...register(
+                    'dueDate',
+
+                    //   {
+                    //   validate: (value) =>
+                    //     !isTopLevel || !!value || 'Due date is required',
+                    // }
+                  )}
                 />
                 <InputGroup.Text>
                   <FaCalendarAlt />
