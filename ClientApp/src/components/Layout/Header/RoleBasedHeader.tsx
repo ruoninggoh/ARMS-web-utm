@@ -63,6 +63,7 @@ const RoleBasedHeader: React.FC = () => {
     'head of department',
     'deputy dean',
     'dean',
+    'program coordinator',
     'lecturer',
   ].includes(role);
 

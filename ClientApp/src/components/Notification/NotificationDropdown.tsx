@@ -16,7 +16,8 @@ const NotificationDropdown: React.FC = () => {
     const fetchNotifications = async () => {
       try {
         const data = await getUserNotifications();
-        setNotifications(data);
+        console.log('Fetched notifications:', data);
+        setNotifications(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Failed to fetch notifications', error);
       } finally {

@@ -6,6 +6,11 @@ export const getUser = () => {
   return user ? JSON.parse(user) : null;
 };
 
+export const isAdmin = (): boolean => {
+  const user = getUser();
+  return user ? user.roles.includes('Admin') : false;
+};
+
 export const logoutUser = () => {
   localStorage.removeItem('jwt');
   localStorage.removeItem('refreshToken');
