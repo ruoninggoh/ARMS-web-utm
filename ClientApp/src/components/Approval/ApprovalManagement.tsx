@@ -95,6 +95,21 @@ const ApprovalManagement: React.FC = () => {
 
   const handleSave = async () => {
     if (!selectedFolder) return;
+
+    if (!semesterCompletionDate) {
+      message.error('Semester completion date is required');
+    }
+
+    if (headOfDepartmentUsernames.length === 0) {
+      message.error('Please select at least one Head of Department approver');
+      return;
+    }
+
+    if (deputyDeanUsernames.length === 0) {
+      message.error('Please select at least one Deputy Dean approver');
+      return;
+    }
+
     try {
       setLoading(true);
       const data: CreateApprovalProgressRequest = {
