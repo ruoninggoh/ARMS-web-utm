@@ -13,6 +13,7 @@ import { Button, DatePicker, message, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 
+import { getUser } from '@/apis/auth';
 import styled from 'styled-components';
 import ApprovalProgress from './ApprovalProgress';
 
@@ -34,6 +35,15 @@ const ApprovalManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const user = getUser();
+    if (user) {
+      setIsAdmin(user.roles.includes('Admin'));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -165,7 +175,7 @@ const ApprovalManagement: React.FC = () => {
     <Container>
       <FormContainer>
         <FormItem>
-          <label>Select Folder:</label>
+          <label>Select Semester:</label>
           <Select
             value={selectedFolder}
             onChange={setSelectedFolder}
@@ -180,7 +190,7 @@ const ApprovalManagement: React.FC = () => {
           </Select>
         </FormItem>
 
-        {selectedFolder && (
+        {selectedFolder && isAdmin && (
           <Button
             type="primary"
             onClick={() => {
@@ -197,60 +207,62 @@ const ApprovalManagement: React.FC = () => {
         )}
       </FormContainer>
 
-      <Modal
-        title={isEditing ? 'Edit Approval Flow' : 'Configure Approval Flow'}
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        onOk={handleSave}
-        confirmLoading={loading}
-      >
-        <FormItem>
-          <label>Semester Completion Date:</label>
-          <DatePicker
-            value={
-              semesterCompletionDate ? dayjs(semesterCompletionDate) : null
-            }
-            onChange={(date) =>
-              setSemesterCompletionDate(date?.toISOString() || null)
-            }
-            style={{ width: '100%' }}
-          />
-        </FormItem>
+      {isAdmin && (
+        <Modal
+          title={isEditing ? 'Edit Approval Flow' : 'Configure Approval Flow'}
+          open={modalVisible}
+          onCancel={() => setModalVisible(false)}
+          onOk={handleSave}
+          confirmLoading={loading}
+        >
+          <FormItem>
+            <label>Semester Completion Date:</label>
+            <DatePicker
+              value={
+                semesterCompletionDate ? dayjs(semesterCompletionDate) : null
+              }
+              onChange={(date) =>
+                setSemesterCompletionDate(date?.toISOString() || null)
+              }
+              style={{ width: '100%' }}
+            />
+          </FormItem>
 
-        <FormItem>
-          <label>Head of Department Approvers:</label>
-          <Select
-            mode="multiple"
-            value={headOfDepartmentUsernames}
-            onChange={setHeadOfDepartmentUsernames}
-            style={{ width: '100%' }}
-            placeholder="Select approvers"
-          >
-            {users.map((user) => (
-              <Option key={user.utmid} value={user.userName || user.email}>
-                {user.userName || user.email}
-              </Option>
-            ))}
-          </Select>
-        </FormItem>
+          <FormItem>
+            <label>Head of Department Approvers:</label>
+            <Select
+              mode="multiple"
+              value={headOfDepartmentUsernames}
+              onChange={setHeadOfDepartmentUsernames}
+              style={{ width: '100%' }}
+              placeholder="Select approvers"
+            >
+              {users.map((user) => (
+                <Option key={user.utmid} value={user.userName || user.email}>
+                  {user.userName || user.email}
+                </Option>
+              ))}
+            </Select>
+          </FormItem>
 
-        <FormItem>
-          <label>Deputy Dean Approvers:</label>
-          <Select
-            mode="multiple"
-            value={deputyDeanUsernames}
-            onChange={setDeputyDeanUsernames}
-            style={{ width: '100%' }}
-            placeholder="Select approvers"
-          >
-            {users.map((user) => (
-              <Option key={user.utmid} value={user.userName || user.email}>
-                {user.userName || user.email}
-              </Option>
-            ))}
-          </Select>
-        </FormItem>
-      </Modal>
+          <FormItem>
+            <label>Deputy Dean Approvers:</label>
+            <Select
+              mode="multiple"
+              value={deputyDeanUsernames}
+              onChange={setDeputyDeanUsernames}
+              style={{ width: '100%' }}
+              placeholder="Select approvers"
+            >
+              {users.map((user) => (
+                <Option key={user.utmid} value={user.userName || user.email}>
+                  {user.userName || user.email}
+                </Option>
+              ))}
+            </Select>
+          </FormItem>
+        </Modal>
+      )}
 
       {approvalProgress && (
         <ProgressContainer>
