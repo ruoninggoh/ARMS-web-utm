@@ -28,5 +28,5 @@ const Container = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
-  padding: 2rem 0;
+  margin-bottom: 5rem;
 `;
