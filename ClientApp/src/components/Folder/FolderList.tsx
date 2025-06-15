@@ -105,7 +105,6 @@ const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
   const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Check user role on componenet mount
   useEffect(() => {
     const user = getUser();
     if (user) {
@@ -271,7 +270,7 @@ const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
     try {
       setLoadingComments(true);
       const commentsData = await getCommentsByFolder(folderId);
-      setComments(commentsData); // go chatgpt
+      setComments(commentsData);
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
@@ -733,6 +732,7 @@ const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
                 <th>Name</th>
                 {/* /<th>Path</th>  */}
                 <th>Last Modified</th>
+                <th>Assigned To</th>
                 <th>Due Date</th>
                 <th>Status</th>
                 <th></th>
@@ -757,6 +757,7 @@ const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
                     {new Date(folder.lastModified).toLocaleDateString()}{' '}
                     {/* Show last modified */}
                   </td>
+                  <td>{folder.lecturerUsername}</td>
                   <td>
                     {folder.dueDate
                       ? new Date(folder.dueDate).toLocaleDateString()
