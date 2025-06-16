@@ -4,12 +4,14 @@ import { User } from '@/types/User/User';
 import { useEffect, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { FaRegEdit } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 interface Props {
   utmid: string;
+  onUserUpdated: () => void;
 }
 
-export default function EditUser({ utmid }: Props) {
+export default function EditUser({ utmid, onUserUpdated }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<User | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -21,6 +23,7 @@ export default function EditUser({ utmid }: Props) {
         setEditedUser({ ...userData, password: '' });
       } catch (error) {
         console.error('Error fetching user:', error);
+        toast.error('Failed to fetch user data');
       }
     };
 
@@ -37,17 +40,25 @@ export default function EditUser({ utmid }: Props) {
 
   const handleSave = async () => {
     if (!editedUser) return;
-    // Create a copy of editedUser without the password if it's unchanged
+
     const updatedUser = { ...editedUser };
     if (!updatedUser.password) {
-      delete updatedUser.password; // Remove password from update payload
+      delete updatedUser.password;
     }
+
     setIsSaving(true);
     try {
-      await updateUser(utmid, editedUser);
-      setIsEditing(false);
+      const { success, message } = await updateUser(utmid, updatedUser);
+      if (success) {
+        toast.success(message || 'User updated successfully');
+        setIsEditing(false);
+        onUserUpdated();
+      } else {
+        toast.error(message || 'Failed to update user');
+      }
     } catch (error) {
       console.error('Error updating user:', error);
+      toast.error('An unexpected error occurred while updating user');
     } finally {
       setIsSaving(false);
     }
@@ -135,7 +146,7 @@ export default function EditUser({ utmid }: Props) {
                   <option>Admin</option>
                   <option>Lecturer</option>
                   <option>Program Coordinator</option>
-                  <option>Head of Department</option>
+                  <option>Head Of Department</option>
                   <option>Deputy Dean</option>
                   <option>Dean</option>
                 </Form.Select>

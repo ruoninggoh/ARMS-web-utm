@@ -13,6 +13,12 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleUserAdded = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   return (
     <Container>
       <RoleBasedHeader />
@@ -49,7 +55,7 @@ const UserManagement: React.FC = () => {
               <option value="Admin">Admin</option>
               <option value="Lecturer">Lecturer</option>
               <option value="Program Coordinator">Program Coordinator</option>
-              <option value="Head of Department">Head of Department</option>
+              <option value="Head Of Department">Head Of Department</option>
               <option value="Deputy Dean">Deputy Dean</option>
               <option value="Dean">Dean</option>
             </Form.Select>
@@ -68,12 +74,19 @@ const UserManagement: React.FC = () => {
             </Button>
           </Col>
         </Row>
-
         {/* User Table Component */}
-        <UserTable searchTerm={searchTerm} selectedRole={selectedRole} />
-
+        <UserTable
+          searchTerm={searchTerm}
+          selectedRole={selectedRole}
+          refreshKey={refreshKey}
+        />{' '}
         {/* Add User Modal */}
-        {isAddingUser && <AddUser onClose={() => setIsAddingUser(false)} />}
+        {isAddingUser && (
+          <AddUser
+            onClose={() => setIsAddingUser(false)}
+            onUserAdded={handleUserAdded}
+          />
+        )}{' '}
       </MainContent>
       <Footer />
     </Container>

@@ -25,9 +25,10 @@ const ErrorMessage = styled.div`
 `;
 interface Props {
   onClose: () => void;
+  onUserAdded?: () => void;
 }
 
-export default function AddUser({ onClose }: Props) {
+export default function AddUser({ onClose, onUserAdded }: Props) {
   const [user, setUser] = useState({
     utmId: '',
     username: '',
@@ -36,7 +37,7 @@ export default function AddUser({ onClose }: Props) {
     role: 'Lecturer' as
       | 'Lecturer'
       | 'Admin'
-      | 'Hod'
+      | 'Head Of Department'
       | 'Program Coordinator'
       | 'Deputy Dean'
       | 'Dean',
@@ -104,6 +105,9 @@ export default function AddUser({ onClose }: Props) {
       if (success) {
         toast.success(message);
         onClose();
+        if (onUserAdded) {
+          onUserAdded();
+        }
       } else {
         // Show the specific error message from API
         toast.error(message);
@@ -220,7 +224,7 @@ export default function AddUser({ onClose }: Props) {
               <option value="Admin">Admin</option>
               <option value="Lecturer">Lecturer</option>
               <option value="Program Coordinator">Program Coordinator</option>
-              <option value="Hod">Head of Department (Hod)</option>
+              <option value="Head Of Department">Head Of Department</option>
               <option value="Deputy Dean">Deputy Dean</option>
               <option value="Dean">Dean</option>
             </Form.Select>

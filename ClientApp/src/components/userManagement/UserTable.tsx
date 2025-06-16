@@ -3,34 +3,43 @@ import { usePageRedirection } from '@/hooks/usePageRedirection';
 import { User } from '@/types/User/User';
 import { useEffect, useState } from 'react';
 import { Alert, Button, Table } from 'react-bootstrap';
+import { toast } from 'react-toastify';
 import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import EditUser from './EditUser';
 
 interface Props {
   searchTerm: string;
   selectedRole: string;
+  refreshKey?: number;
 }
 
-export default function UserTable({ searchTerm, selectedRole }: Props) {
+export default function UserTable({
+  searchTerm,
+  selectedRole,
+  refreshKey,
+}: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const redirect = usePageRedirection();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const fetchedUsers = await getAllUsers();
-        setUsers(fetchedUsers || []); // Ensure it is always an array
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-        redirect('login');
-      }
-    };
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const fetchedUsers = await getAllUsers();
+      setUsers(fetchedUsers || []);
+    } catch (error) {
+      toast.error('Failed to fetch users');
+      redirect('login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [refreshKey]);
 
   const handleDeleteClick = (id: string) => {
     setSelectedUser(id);
@@ -38,17 +47,30 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
   };
 
   const handleConfirmDelete = async () => {
-    if (selectedUser) {
-      try {
-        await deleteUser(selectedUser);
-        setUsers(users.filter((user) => user.utmid !== selectedUser));
-        setSuccessMessage('User deleted successfully. ');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      } catch (error) {
-        console.error('Error deleting user:', error);
-      }
+    if (!selectedUser) {
+      setShowModal(false);
+      return;
     }
-    setShowModal(false);
+
+    try {
+      const result = await deleteUser(selectedUser);
+      if (result.success) {
+        await fetchUsers(); // Refresh the user list
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error deleting user:', error);
+      toast.error(errorMessage);
+    } finally {
+      setShowModal(false);
+    }
+  };
+  const handleUserUpdated = () => {
+    fetchUsers();
   };
 
   const filteredUsers = Array.isArray(users)
@@ -62,8 +84,9 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
 
   return (
     <>
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
-      {filteredUsers.length === 0 ? (
+      {isLoading ? (
+        <Alert variant="info">Loading users...</Alert>
+      ) : filteredUsers.length === 0 ? (
         <Alert variant="warning">No users found.</Alert>
       ) : (
         <Table striped bordered hover>
@@ -84,7 +107,10 @@ export default function UserTable({ searchTerm, selectedRole }: Props) {
                 <td>{user.email}</td>
                 <td>{user.role}</td>
                 <td>
-                  <EditUser utmid={user.utmid} />
+                  <EditUser
+                    utmid={user.utmid}
+                    onUserUpdated={handleUserUpdated}
+                  />{' '}
                   <Button
                     variant="danger"
                     size="sm"
