@@ -29,23 +29,46 @@ export const getUserByUTMID = async (UTMID: string): Promise<User> => {
 export const updateUser = async (
   UTMID: string,
   updatedUser: Partial<User>,
-): Promise<{ success: boolean; error?: any }> => {
+): Promise<{ success: boolean; message?: string; error?: unknown }> => {
   try {
-    await apiClient.put(`/Account/Admin/update/${UTMID}`, updatedUser);
-    return { success: true };
-  } catch (error) {
+    const response = await apiClient.put(
+      `/Account/Admin/update/${UTMID}`,
+      updatedUser,
+    );
+    return {
+      success: true,
+      message: response.data?.message || 'User updated successfully',
+    };
+  } catch (error: unknown) {
     console.error('Error updating user:', error);
-    return { success: false, error };
+    return {
+      success: false,
+      message:
+        (error as any)?.response?.data?.Message || 'Failed to update user',
+      error,
+    };
   }
 };
 
 // Delete user by UTMID
-export const deleteUser = async (UTMID: string): Promise<void> => {
+export const deleteUser = async (
+  UTMID: string,
+): Promise<{ success: boolean; message?: string }> => {
   try {
-    await apiClient.delete(`/Account/Admin/delete/${UTMID}`); // Adjust the endpoint accordingly
-  } catch (error) {
+    const response = await apiClient.delete(`/Account/Admin/delete/${UTMID}`);
+    return {
+      success: true,
+      message: response.data?.message || 'User deleted successfully',
+    };
+  } catch (error: unknown) {
+    const errorMessage =
+      (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message || 'Failed to delete user';
     console.error('Error deleting user:', error);
-    throw error; // Re-throw to handle it in the component
+    return {
+      success: false,
+      message: errorMessage,
+    };
   }
 };
 
