@@ -194,11 +194,6 @@ const RoleBasedHeader: React.FC = () => {
                   </a>
                 </li>
                 <li>
-                  <a className="dropdown-item" href="#">
-                    Settings
-                  </a>
-                </li>
-                <li>
                   <hr className="dropdown-divider" />
                 </li>
                 <li>
