@@ -6,7 +6,7 @@ export interface User {
   role:
     | 'Lecturer'
     | 'Admin'
-    | 'Hod'
+    | 'Head Of Department'
     | 'Program Coordinator'
     | 'Deputy Dean'
     | 'Dean';
