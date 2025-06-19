@@ -838,7 +838,6 @@ const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
                   className="align-middle"
                   style={{ cursor: 'pointer' }}
                   onClick={(e) => {
-                    // Type cast the target to Element to access closest()
                     const target = e.target as HTMLElement;
                     if (!target.closest('.action-menu')) {
                       if (file.webViewLink) {
@@ -855,8 +854,8 @@ const FolderList: React.FC<FolderListProps> = ({ showWelcome = false }) => {
                     {getFileIcon(file.fileName)}
                     <b>{file.fileName}</b>
                   </td>
-                  {/* <td>{file.filePath || '-'}</td> */}
                   <td>{new Date(file.lastModified).toLocaleDateString()}</td>
+                  <td>-</td>
                   <td>-</td>
                   <td>
                     <Badge bg="secondary">Active</Badge>
