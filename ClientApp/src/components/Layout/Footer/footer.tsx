@@ -1,4 +1,4 @@
-import FcLogo from '@/images/landing/fcLogo2.png';
+import { StaticImage } from 'gatsby-plugin-image';
 import React from 'react';
 import styled from 'styled-components';
 
@@ -7,7 +7,12 @@ const Footer: React.FC = () => {
     <FooterContainer>
       <FooterContent>
         <Section>
-          <Logo src={FcLogo} alt="UTM Logo" />
+          <StaticImage
+            src="../../images/landing/fcLogo2.png"
+            alt="UTM Logo"
+            placeholder="blurred"
+            width={300}
+          />{' '}
           <Title>School of Computing</Title>
           <Subtitle>Faculty of Engineering</Subtitle>
           <Description>
@@ -73,11 +78,6 @@ const Section = styled.div`
     margin: 10px 0;
     text-align: center;
   }
-`;
-
-const Logo = styled.img`
-  width: 300px;
-  margin-bottom: 10px;
 `;
 
 const Title = styled.h2`
