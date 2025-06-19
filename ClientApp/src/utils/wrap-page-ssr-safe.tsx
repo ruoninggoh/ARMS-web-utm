@@ -1,16 +1,18 @@
-// src/utils/wrap-page-ssr-safe.tsx
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 
-const SSRWrapper = ({ element }: { element: React.ReactNode }) => {
-  // If on server side, return null (do not render)
+const SSRWrapper = ({ children }: { children: React.ReactNode }) => {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  // On client side, render normally
-  return <>{element}</>;
+  return <>{children}</>;
 };
 
-export function wrapPageElement({ element }: { element: React.ReactNode }) {
-  return <SSRWrapper element={element} />;
-}
+export const wrapPageElement = ({ element }: { element: React.ReactNode }) => {
+  return (
+    <SSRWrapper>
+      <BrowserRouter>{element}</BrowserRouter>
+    </SSRWrapper>
+  );
+};
