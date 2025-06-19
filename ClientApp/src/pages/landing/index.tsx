@@ -63,22 +63,30 @@ const Overlay = styled.div`
   position: absolute;
   z-index: 1;
 
-  /* Background image configuration */
   &::before {
     content: '';
     background-image: url(${FcBackground});
-    background-size: cover;
+    background-size: 120%; // Optional: Zoom in
     background-position: top center;
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    opacity: 0.5;
+    z-index: -2;
+  }
+
+  &::after {
+    content: '';
+    background-color: rgba(0, 0, 0, 0.2);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: -1;
   }
 `;
-
 const LogoContainer = styled.div`
   position: absolute;
   top: 20px;

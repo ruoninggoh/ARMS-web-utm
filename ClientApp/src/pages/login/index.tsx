@@ -1,4 +1,4 @@
-import { loginUser } from '@/apis/auth'; // Import API function
+import { loginUser } from '@/apis/auth';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import FcBackground from '@/images/landing/fcBackground.jpg';
 import FcLogo from '@/images/landing/fcLogo2.png';
@@ -96,14 +96,24 @@ const Overlay = styled.div`
   &::before {
     content: '';
     background-image: url(${FcBackground});
-    background-size: cover;
+    background-size: 120%; // Optional: Zoom in
     background-position: top center;
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    opacity: 0.5;
+    z-index: -2;
+  }
+
+  &::after {
+    content: '';
+    background-color: rgba(0, 0, 0, 0.2);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: -1;
   }
 `;
@@ -135,10 +145,9 @@ const Logo = styled.img`
 const ContentWrapper = styled(Col)`
   padding: 40px 30px;
   border-radius: 8px;
-  color: black;
-  width: 150%; /* Increased width */
+  width: 150%;
   max-width: 500px;
-  background-color: #ffffff73;
+  background-color: rgba(13, 12, 12, 0.45);
   display: block;
 `;
 
