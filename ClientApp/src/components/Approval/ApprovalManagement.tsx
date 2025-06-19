@@ -2,9 +2,11 @@ import {
   approveStage,
   createApprovalProgress,
   getApprovalProgress,
+  getDeputyDeans,
+  getHeadsOfDepartment,
   updateApprovalProgress,
 } from '@/apis/approval';
-import { getAssigneeList, getTopLevelFolders } from '@/apis/folder';
+import { getTopLevelFolders } from '@/apis/folder';
 import { ApprovalStage } from '@/enums/ApprovalStage';
 import { ApprovalProgressDto } from '@/types/Approval/ApprovalProgressDto';
 import { CreateApprovalProgressRequest } from '@/types/Approval/CreateApprovalProgressRequest';
@@ -21,7 +23,6 @@ const { Option } = Select;
 
 const ApprovalManagement: React.FC = () => {
   const [folders, setFolders] = useState<any[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [semesterCompletionDate, setSemesterCompletionDate] = useState<
     string | null
@@ -35,6 +36,8 @@ const ApprovalManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [headUsers, setHeadUsers] = useState<User[]>([]);
+  const [deputyDeanUsers, setDeputyDeanUsers] = useState<User[]>([]);
 
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -49,12 +52,14 @@ const ApprovalManagement: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [foldersData, usersData] = await Promise.all([
+        const [foldersData, heads, deputies] = await Promise.all([
           getTopLevelFolders(),
-          getAssigneeList(),
+          getHeadsOfDepartment(),
+          getDeputyDeans(),
         ]);
         setFolders(foldersData);
-        setUsers(usersData);
+        setHeadUsers(heads);
+        setDeputyDeanUsers(deputies);
       } catch (error) {
         message.error('Failed to fetch folders or users');
       } finally {
@@ -237,7 +242,7 @@ const ApprovalManagement: React.FC = () => {
               style={{ width: '100%' }}
               placeholder="Select approvers"
             >
-              {users.map((user) => (
+              {headUsers.map((user) => (
                 <Option key={user.utmid} value={user.userName || user.email}>
                   {user.userName || user.email}
                 </Option>
@@ -254,7 +259,7 @@ const ApprovalManagement: React.FC = () => {
               style={{ width: '100%' }}
               placeholder="Select approvers"
             >
-              {users.map((user) => (
+              {deputyDeanUsers.map((user) => (
                 <Option key={user.utmid} value={user.userName || user.email}>
                   {user.userName || user.email}
                 </Option>
