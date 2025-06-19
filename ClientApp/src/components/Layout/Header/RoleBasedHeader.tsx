@@ -34,7 +34,7 @@ const RoleBasedHeader: React.FC = () => {
 
   const handleUser = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    redirect('admin/userManagement');
+    redirect('userManagement');
   };
 
   const handleProfileRedirect = (
