@@ -7,10 +7,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 const ProfilePage: React.FC = () => {
+  const isSSR = typeof window === 'undefined';
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const redirect = useCallback(usePageRedirection(), []); // ✅ Prevent re-renders
+  const redirect = useCallback(usePageRedirection(), []);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -48,6 +50,7 @@ const ProfilePage: React.FC = () => {
       alert('Failed to update profile');
     }
   };
+  if (isSSR) return null;
 
   return (
     <ProfilePageContainer>

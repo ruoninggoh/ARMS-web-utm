@@ -11,6 +11,8 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 const NotificationPage: React.FC = () => {
+  const isSSR = typeof window === 'undefined';
+
   const [notifications, setNotifications] = useState<Notifications[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +41,7 @@ const NotificationPage: React.FC = () => {
       console.error('Failed to mark notification as read', error);
     }
   };
+  if (isSSR) return null;
 
   return (
     <>

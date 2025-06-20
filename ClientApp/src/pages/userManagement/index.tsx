@@ -9,6 +9,8 @@ import { ToastContainer } from 'react-toastify';
 import styled from 'styled-components';
 
 const UserManagement: React.FC = () => {
+  const isSSR = typeof window === 'undefined';
+
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
@@ -18,6 +20,7 @@ const UserManagement: React.FC = () => {
   const handleUserAdded = () => {
     setRefreshKey((prev) => prev + 1);
   };
+  if (isSSR) return null;
 
   return (
     <Container>
@@ -36,7 +39,6 @@ const UserManagement: React.FC = () => {
           draggable
           draggablePercent={60}
         />
-        {/* Search & Filter */}
         <Row className="mb-4 align-items-center">
           <Col md={4}>
             <Form.Control
