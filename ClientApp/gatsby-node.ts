@@ -10,19 +10,33 @@
 //     },
 //   });
 // };
-
-// gatsby-node.ts
 import type { GatsbyNode } from 'gatsby';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 
 export const onCreateWebpackConfig: GatsbyNode['onCreateWebpackConfig'] = ({
   actions,
+  stage,
+  loaders,
 }) => {
   actions.setWebpackConfig({
     resolve: {
       plugins: [new TsconfigPathsPlugin()],
     },
   });
+
+  // Add this to handle Ant Design during SSR build
+  if (stage === 'build-html') {
+    actions.setWebpackConfig({
+      module: {
+        rules: [
+          {
+            test: /[\\/]node_modules[\\/](antd|rc-.*)/,
+            use: loaders.null(),
+          },
+        ],
+      },
+    });
+  }
 };
 
 export const onCreatePage: GatsbyNode['onCreatePage'] = async ({
@@ -36,7 +50,7 @@ export const onCreatePage: GatsbyNode['onCreatePage'] = async ({
     ...page,
     context: {
       ...page.context,
-      ssr: false, // ✅ Disable SSR for ALL pages
+      ssr: false,
     },
   });
 };
