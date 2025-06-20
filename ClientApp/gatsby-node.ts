@@ -10,7 +10,6 @@
 //     },
 //   });
 // };
-
 import type { GatsbyNode } from 'gatsby';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 
@@ -24,21 +23,26 @@ export const onCreateWebpackConfig: GatsbyNode['onCreateWebpackConfig'] = ({
   });
 };
 
-// 👇 This is the new part that avoids the build-time crash
+// 👇 Exclude specific routes like /profile from SSR
 export const onCreatePage: GatsbyNode['onCreatePage'] = async ({
   page,
   actions,
 }) => {
-  const { createPage, deletePage } = actions;
+  const { deletePage, createPage } = actions;
 
-  // List of pages that fail due to `document` or `window` usage
-  const clientOnlyRoutes = ['/userManagement/', '/notification/'];
+  // List of client-only routes that rely on browser-only APIs
+  const clientOnlyPaths = ['/profile', '/userManagement', '/notification'];
 
-  if (clientOnlyRoutes.includes(page.path)) {
-    deletePage(page); // Remove the original
+  if (clientOnlyPaths.includes(page.path)) {
+    deletePage(page);
+
     createPage({
       ...page,
-      defer: true, // Defer rendering to runtime
+      context: {
+        ...page.context,
+        // This disables SSR for this route
+        ssr: false,
+      },
     });
   }
 };
