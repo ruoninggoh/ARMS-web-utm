@@ -26,7 +26,12 @@ export const onCreateWebpackConfig: GatsbyNode['onCreateWebpackConfig'] = ({
 export const onCreatePage = async ({ page, actions }) => {
   const { deletePage, createPage } = actions;
 
-  const clientOnlyRoutes = ['/userManagement/', '/profile/', '/notification/'];
+  const clientOnlyRoutes = [
+    '/userManagement/',
+    '/profile/',
+    '/notification/',
+    '/dashboard/',
+  ];
 
   if (clientOnlyRoutes.includes(page.path)) {
     deletePage(page);
