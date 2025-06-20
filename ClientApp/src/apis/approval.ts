@@ -1,8 +1,8 @@
 import { ApprovalProgressDto } from '@/types/Approval/ApprovalProgressDto';
 import { CreateApprovalProgressRequest } from '@/types/Approval/CreateApprovalProgressRequest';
 import { UpdateApprovalProgressRequest } from '@/types/Approval/UpdateApprovalProgressRequest';
-import apiClient from './api';
 import { User } from '@/types/User/User';
+import apiClient from './api';
 
 export const getApprovalProgress = async (
   folderId: number,
