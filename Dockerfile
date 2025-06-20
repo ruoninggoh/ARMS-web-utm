@@ -27,7 +27,7 @@ WORKDIR /app
 COPY --from=build /app/publish ./
 
 # Copy frontend static files
-COPY --from=frontend-build /app/ClientApp/build ./wwwroot
+COPY --from=frontend-build /app/ClientApp/public ./wwwroot
 
 # Expose port 80 for web
 EXPOSE 80
