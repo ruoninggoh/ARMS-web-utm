@@ -2,6 +2,7 @@ import { loginUser } from '@/apis/auth';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import FcBackground from '@/images/landing/fcBackground.jpg';
 import FcLogo from '@/images/landing/fcLogo2.png';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useState } from 'react';
 import { Button, Col, Form } from 'react-bootstrap';
 import styled from 'styled-components';
@@ -176,6 +177,7 @@ const LoginButton = styled(Button)`
   font-size: 1.2rem;
   transition: background-color 0.3s ease, transform 0.2s ease;
   margin-top: 20px;
+  color: white;
 
   &:hover {
     background-color: #4a0018;
