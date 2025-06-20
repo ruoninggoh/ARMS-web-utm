@@ -11,6 +11,7 @@
 //   });
 // };
 
+// gatsby-node.ts
 import type { GatsbyNode } from 'gatsby';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 
@@ -23,24 +24,19 @@ export const onCreateWebpackConfig: GatsbyNode['onCreateWebpackConfig'] = ({
     },
   });
 };
-export const onCreatePage = async ({ page, actions }) => {
+
+export const onCreatePage: GatsbyNode['onCreatePage'] = async ({
+  page,
+  actions,
+}) => {
   const { deletePage, createPage } = actions;
 
-  const clientOnlyRoutes = [
-    '/userManagement/',
-    '/profile/',
-    '/notification/',
-    '/dashboard/',
-  ];
-
-  if (clientOnlyRoutes.includes(page.path)) {
-    deletePage(page);
-    createPage({
-      ...page,
-      context: {
-        ...page.context,
-        ssr: false,
-      },
-    });
-  }
+  deletePage(page);
+  createPage({
+    ...page,
+    context: {
+      ...page.context,
+      ssr: false, // ✅ Disable SSR for ALL pages
+    },
+  });
 };
