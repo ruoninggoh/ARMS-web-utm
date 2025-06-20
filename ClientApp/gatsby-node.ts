@@ -23,15 +23,10 @@ export const onCreateWebpackConfig: GatsbyNode['onCreateWebpackConfig'] = ({
     },
   });
 };
-
-export const onCreatePage: GatsbyNode['onCreatePage'] = async ({
-  page,
-  actions,
-}) => {
+export const onCreatePage = async ({ page, actions }) => {
   const { deletePage, createPage } = actions;
 
-  // These MUST match your actual deployed URLs including the trailing slash
-  const clientOnlyRoutes = ['/profile/', '/userManagement/', '/notification/'];
+  const clientOnlyRoutes = ['/userManagement/', '/profile/', '/notification/'];
 
   if (clientOnlyRoutes.includes(page.path)) {
     deletePage(page);
@@ -39,7 +34,7 @@ export const onCreatePage: GatsbyNode['onCreatePage'] = async ({
       ...page,
       context: {
         ...page.context,
-        ssr: false, // Disable SSR for this page
+        ssr: false,
       },
     });
   }

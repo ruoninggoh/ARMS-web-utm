@@ -7,4 +7,9 @@ const UserManagement = loadable(
   },
 );
 
-export default UserManagement;
+const UserManagementPage = () => {
+  if (typeof window === 'undefined') return null;
+  return <UserManagement />;
+};
+
+export default UserManagementPage;
