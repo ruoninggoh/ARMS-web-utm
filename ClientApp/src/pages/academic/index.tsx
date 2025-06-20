@@ -1,30 +1,7 @@
-import FolderList from '@/components/Folder/FolderList';
-import Footer from '@/components/Layout/Footer/footer';
-import RoleBasedHeader from '@/components/Layout/Header/RoleBasedHeader';
-import React from 'react';
-import styled from 'styled-components';
+import loadable from '@loadable/component';
 
-const Academic: React.FC = () => {
-  return (
-    <Container>
-      <RoleBasedHeader />
-      <MainContent>
-        <FolderList showWelcome />
-      </MainContent>
-      <Footer />
-    </Container>
-  );
-};
+const Academic = loadable(() => import('@/components/pages/Academic'), {
+  fallback: <p>Loading...</p>,
+});
 
 export default Academic;
-
-const Container = styled.div`
-  background-color: #f8f9fa;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-`;
