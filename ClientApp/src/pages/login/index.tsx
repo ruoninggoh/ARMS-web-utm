@@ -2,7 +2,6 @@ import { loginUser } from '@/apis/auth';
 import { usePageRedirection } from '@/hooks/usePageRedirection';
 import FcBackground from '@/images/landing/fcBackground.jpg';
 import FcLogo from '@/images/landing/fcLogo2.png';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useState } from 'react';
 import { Button, Col, Form } from 'react-bootstrap';
 import styled from 'styled-components';
