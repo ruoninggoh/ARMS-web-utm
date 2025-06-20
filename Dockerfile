@@ -1,11 +1,8 @@
 # Stage 1: Build the React frontend
-FROM node:18-alpine AS frontend-build
+FROM node:18 AS frontend-build
 WORKDIR /app/ClientApp
 
-# Copy only package.json and package-lock.json first for caching npm install step
 COPY ClientApp/package.json ClientApp/package-lock.json ./
-
-# Install with peer dependency workaround
 RUN npm install --legacy-peer-deps
 
 COPY ClientApp/ ./
