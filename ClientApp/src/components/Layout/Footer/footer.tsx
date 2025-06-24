@@ -13,8 +13,8 @@ const Footer: React.FC = () => {
             placeholder="blurred"
             width={300}
           />{' '}
-          <Title>School of Computing</Title>
-          <Subtitle>Faculty of Engineering</Subtitle>
+          <Title>Faculty of Computing</Title>
+          <Subtitle>Universiti Teknologi Malaysia</Subtitle>
           <Description>
             Our goal is to develop cutting-edge digital talents,
             industry-relevant solutions, and efficient services in computing
@@ -90,6 +90,7 @@ const Subtitle = styled.h3`
   font-weight: normal;
   color: #555;
   margin-bottom: 10px;
+  color: maroon;
 `;
 
 const Description = styled.p`
