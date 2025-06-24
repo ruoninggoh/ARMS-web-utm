@@ -1,9 +1,10 @@
+import Loader from '@/components/common/Loader';
 import loadable from '@loadable/component';
 
 const UserManagement = loadable(
   () => import('@/components/pages/UserManagement'),
   {
-    fallback: <p>Loading...</p>,
+    fallback: <Loader />,
   },
 );
 
