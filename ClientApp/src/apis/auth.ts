@@ -57,7 +57,7 @@ export const refreshToken = async (): Promise<string> => {
 
   const response = await axios.post(
     // 'https://localhost:7224/api/account/refresh-token',
-    'https://arms-backend.onrender.com/api/account/refresh-token',
+    'https://arms-web-utm.onrender.com/api/account/refresh-token',
 
     { refreshToken },
     {
