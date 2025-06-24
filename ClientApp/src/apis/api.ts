@@ -2,10 +2,8 @@ import axios from 'axios';
 import { logoutUser, refreshToken } from './auth';
 
 const apiClient = axios.create({
-  baseURL: 'https://localhost:7224/api',
-  // headers: {
-  //   'Content-Type': 'application/json',
-  // },
+  // baseURL: 'https://localhost:7224/api',
+  baseURL: 'https://arms-backend.onrender.com/api',
 });
 
 let isRefreshing = false;
